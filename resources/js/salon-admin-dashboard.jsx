@@ -77,6 +77,12 @@ const DARK_COLORS = {
 const ThemeContext = createContext({ colors: LIGHT_COLORS, theme: "light", toggleTheme: () => {} });
 const useTheme = () => useContext(ThemeContext);
 
+// Brand shown in the sidebar, auth screens and tab title. Follows the salon name
+// from Settings so the dashboard matches the public site; falls back to the product name.
+const DEFAULT_BRAND = "Vivi - Sphere";
+const BrandContext = createContext(DEFAULT_BRAND);
+const useBrand = () => useContext(BrandContext);
+
 const sansFont = "'Work Sans', system-ui, sans-serif";
 const serifFont = "'Newsreader', Georgia, serif";
 
@@ -497,12 +503,14 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ThemeContext.Provider value={{ colors, theme, toggleTheme }}>
+       <BrandContext.Provider value={landingContent.salonName || DEFAULT_BRAND}>
         <div style={{ fontFamily: sansFont }}>
           <GlobalStyle />
           {screen !== "app" && notice && <div className="max-w-md mx-auto mt-4 px-4"><NotifyBanner notice={notice} /></div>}
           {body}
           <ConfirmModal confirm={confirm} onCancel={() => setConfirm(null)} onConfirm={() => { confirm?.onYes(); setConfirm(null); }} />
         </div>
+       </BrandContext.Provider>
       </ThemeContext.Provider>
     </ErrorBoundary>
   );
@@ -510,7 +518,7 @@ export default function App() {
 
 function BootLoader() {
   const { colors } = useTheme();
-  return <div style={{ background: colors.bgApp, color: colors.subtle }} className="min-h-screen flex items-center justify-center text-sm">Loading Vivi &amp; Sphere...</div>;
+  return <div style={{ background: colors.bgApp, color: colors.subtle }} className="min-h-screen flex items-center justify-center text-sm">Loading...</div>;
 }
 
 function ThemeToggle({ compact }) {
@@ -527,6 +535,7 @@ function ThemeToggle({ compact }) {
 
 function AuthShell({ children, onBack }) {
   const { colors } = useTheme();
+  const brand = useBrand();
   return (
     <div style={{ background: colors.roseSoft }} className="min-h-screen flex items-center justify-center p-6">
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}`, color: colors.ink }} className="w-full max-w-sm rounded-2xl shadow-lg p-8 sm:p-9">
@@ -534,7 +543,7 @@ function AuthShell({ children, onBack }) {
           <button onClick={onBack} style={{ color: colors.subtle }} className="text-xs">← Back to site</button>
           <ThemeToggle compact />
         </div>
-        <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-2xl mb-6">Vivi - Sphere</div>
+        <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-2xl mb-6">{brand}</div>
         {children}
       </div>
     </div>
@@ -688,7 +697,8 @@ function Dashboard(props) {
   const [siteDraft, setSiteDraft] = useState(landingContent);
   const [newFaq, setNewFaq] = useState({ question: "", answer: "" });
 
-  useDocumentMeta(`${isClientView ? "My account" : "Dashboard"} — Vivi - Sphere`, "Salon management dashboard.");
+  const brand = useBrand();
+  useDocumentMeta(`${isClientView ? "My account" : "Dashboard"} — ${brand}`, "Salon management dashboard.");
 
   const serviceInfo = (name) => services[name] || { price: 0, duration: 45 };
   const priceOf = (service) => serviceInfo(service).price;
@@ -991,9 +1001,9 @@ function Dashboard(props) {
       <aside style={{ background: colors.cardBg, borderRight: `1px solid ${colors.border}` }} className={`fixed md:static inset-y-0 left-0 z-40 w-60 flex-shrink-0 flex flex-col py-6 px-4 transform transition-transform md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="px-2 mb-8 flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div style={{ background: colors.wine, color: colors.cardBg, fontFamily: serifFont }} className="w-9 h-9 rounded-lg flex items-center justify-center text-lg font-semibold flex-shrink-0">V</div>
+            <div style={{ background: colors.wine, color: colors.cardBg, fontFamily: serifFont }} className="w-9 h-9 rounded-lg flex items-center justify-center text-lg font-semibold flex-shrink-0">{(brand.trim()[0] || "V").toUpperCase()}</div>
             <div>
-              <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-xl leading-tight">Vivi - Sphere</div>
+              <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-xl leading-tight">{brand}</div>
               <div style={{ color: colors.subtle }} className="text-[11px]">{isClientView ? "My account" : "Salon administration"}</div>
             </div>
           </div>
