@@ -1,5 +1,94 @@
 @import "tailwindcss";
-/* Small custom utility used for the mobile sticky CTA bar's safe-area padding on notched phones. */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+
+/*
+ * Design tokens.
+ * Tailwind v4 does not read tailwind.config.js automatically, so the brand
+ * palette and fonts live here. Every public page and the dashboard shell use
+ * these tokens - change a value once and it updates everywhere.
+ */
+@theme {
+  --font-sans: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+
+  --color-wine: #7a3956;
+  --color-wine-dark: #5f2b43;
+  --color-winesoft: #f3e4ea;
+  --color-rose: #c97c96;
+  --color-rosesoft: #f8ecf0;
+  --color-cream: #fdf8fa;
+  --color-ink: #2e2229;
+  --color-subtle: #6f5d66; /* darkened from #8C7A82 so small text meets WCAG AA on white */
+  --color-line: #efe4e9;
+
+  --shadow-card: 0 1px 2px rgb(46 34 41 / 0.04), 0 4px 16px rgb(122 57 86 / 0.06);
+  --shadow-lift: 0 2px 4px rgb(46 34 41 / 0.05), 0 12px 32px rgb(122 57 86 / 0.14);
 }
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background: var(--color-cream);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-wine);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--color-winesoft);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+}
+
+@layer components {
+  /* Layout */
+  .container-page { @apply mx-auto w-full max-w-6xl px-5 sm:px-8; }
+  .section { @apply py-16 md:py-24; }
+  .section-head { @apply mb-10 md:mb-14 max-w-2xl; }
+  .section-head.center { @apply mx-auto text-center; }
+  .eyebrow { @apply mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-wine; }
+  .h2 { @apply font-serif text-3xl leading-tight md:text-4xl; }
+  .lead { @apply text-base leading-relaxed text-subtle md:text-lg; }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold
+           transition duration-150 ease-out active:scale-[0.98];
+  }
+  .btn-lg { @apply px-7 py-3.5 text-base; }
+  .btn-primary { @apply bg-wine text-white shadow-sm hover:bg-wine-dark hover:shadow-md; }
+  .btn-secondary { @apply border border-wine/30 bg-white text-wine hover:border-wine hover:bg-winesoft; }
+  .btn-light { @apply bg-white text-wine shadow-sm hover:bg-rosesoft; }
+  .btn-ghost { @apply text-wine hover:bg-winesoft; }
+
+  /* Cards */
+  .card { @apply rounded-2xl border border-line bg-white shadow-card; }
+  .card-hover { @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lift; }
+
+  /* Misc */
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full bg-winesoft px-3 py-1 text-xs font-medium text-wine; }
+  .nav-link { @apply rounded-md px-3 py-2 text-sm font-medium text-subtle transition hover:bg-winesoft hover:text-wine; }
+}
+
+/* Used by the mobile sticky CTA bar for the safe-area on notched phones. */
+.pb-safe {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Native <details> chevron for the FAQ and the mobile menu */
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }

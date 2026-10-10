@@ -85,8 +85,15 @@ function GlobalStyle() {
   return (
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap');
-      .btn-wine { background: ${colors.wine}; color: #fff; transition: background 0.15s ease; }
+      body { font-family: ${sansFont}; -webkit-font-smoothing: antialiased; }
+      button, a, input, select, textarea { transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, transform 0.1s ease; }
+      button { cursor: pointer; }
+      button:disabled { cursor: not-allowed; opacity: 0.6; }
+      button:focus-visible, a:focus-visible { outline: 2px solid ${colors.wine}; outline-offset: 2px; }
+      input:focus, select:focus, textarea:focus { outline: none; border-color: ${colors.wine} !important; box-shadow: 0 0 0 3px ${colors.wineSoft}; }
+      .btn-wine { background: ${colors.wine}; color: #fff; box-shadow: 0 1px 2px rgba(46,34,41,0.12); }
       .btn-wine:hover { filter: brightness(0.9); }
+      .btn-wine:active { transform: scale(0.98); }
       .btn-outline-wine:hover { background: ${colors.wineSoft}; }
       .nav-link:hover { background: ${colors.roseSoft}; }
       .icon-btn:hover { filter: brightness(0.92); }
@@ -516,7 +523,7 @@ function AuthShell({ children, onBack }) {
   const { colors } = useTheme();
   return (
     <div style={{ background: colors.roseSoft }} className="min-h-screen flex items-center justify-center p-6">
-      <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}`, color: colors.ink }} className="w-full max-w-sm rounded-lg shadow-sm p-8">
+      <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}`, color: colors.ink }} className="w-full max-w-sm rounded-2xl shadow-lg p-8 sm:p-9">
         <div className="flex items-center justify-between mb-6">
           <button onClick={onBack} style={{ color: colors.subtle }} className="text-xs">← Back to site</button>
           <ThemeToggle compact />
@@ -629,7 +636,7 @@ function LabeledInput({ label, value, onChange, type = "text", placeholder }) {
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} style={{ color: colors.subtle }} className="text-xs">{label}</label>
-      <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-md text-sm" />
+      <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2.5 rounded-lg text-sm" />
     </div>
   );
 }
