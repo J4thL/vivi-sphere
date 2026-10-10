@@ -1,0 +1,5 @@
+@import "tailwindcss";
+/* Small custom utility used for the mobile sticky CTA bar's safe-area padding on notched phones. */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
