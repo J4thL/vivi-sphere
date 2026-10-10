@@ -91,10 +91,16 @@ function GlobalStyle() {
       button:disabled { cursor: not-allowed; opacity: 0.6; }
       button:focus-visible, a:focus-visible { outline: 2px solid ${colors.wine}; outline-offset: 2px; }
       input:focus, select:focus, textarea:focus { outline: none; border-color: ${colors.wine} !important; box-shadow: 0 0 0 3px ${colors.wineSoft}; }
-      .btn-wine { background: ${colors.wine}; color: #fff; box-shadow: 0 1px 2px rgba(46,34,41,0.12); }
+      .btn-wine { background: ${colors.wine}; color: ${colors.bgApp}; box-shadow: 0 1px 2px rgba(46,34,41,0.12); }
       .btn-wine:hover { filter: brightness(0.9); }
       .btn-wine:active { transform: scale(0.98); }
       .btn-outline-wine:hover { background: ${colors.wineSoft}; }
+      select { border-radius: 8px; padding-right: 1.75rem; }
+      table thead tr { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+      table tbody tr { transition: background-color 0.12s ease; }
+      table tbody tr:hover { background: ${colors.roseSoft}; }
+      .dash-card { transition: box-shadow 0.2s ease, transform 0.2s ease; box-shadow: 0 1px 2px rgba(46,34,41,0.04), 0 4px 16px rgba(122,57,86,0.06); }
+      .stat-card:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(46,34,41,0.05), 0 10px 28px rgba(122,57,86,0.12); }
       .nav-link:hover { background: ${colors.roseSoft}; }
       .icon-btn:hover { filter: brightness(0.92); }
       .link-btn:hover { text-decoration: underline; }
@@ -310,7 +316,7 @@ function ConfirmModal({ confirm, onCancel, onConfirm }) {
   if (!confirm) return null;
   return (
     <div style={{ background: "rgba(0,0,0,0.35)" }} className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 max-w-sm w-full shadow-sm">
+      <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 max-w-sm w-full dash-card">
         <div className="text-sm mb-4">{confirm.message}</div>
         <div className="flex justify-end gap-2">
           <button onClick={onCancel} style={{ color: colors.subtle }} className="text-sm px-3 py-1.5">Cancel</button>
@@ -984,9 +990,12 @@ function Dashboard(props) {
 
       <aside style={{ background: colors.cardBg, borderRight: `1px solid ${colors.border}` }} className={`fixed md:static inset-y-0 left-0 z-40 w-60 flex-shrink-0 flex flex-col py-6 px-4 transform transition-transform md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="px-2 mb-8 flex items-start justify-between">
-          <div>
-            <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-2xl">Vivi - Sphere</div>
-            <div style={{ color: colors.subtle }} className="text-xs mt-1">{isClientView ? "My account" : "Salon administration"}</div>
+          <div className="flex items-center gap-3">
+            <div style={{ background: colors.wine, color: colors.cardBg, fontFamily: serifFont }} className="w-9 h-9 rounded-lg flex items-center justify-center text-lg font-semibold flex-shrink-0">V</div>
+            <div>
+              <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-xl leading-tight">Vivi - Sphere</div>
+              <div style={{ color: colors.subtle }} className="text-[11px]">{isClientView ? "My account" : "Salon administration"}</div>
+            </div>
           </div>
           <button onClick={() => setSidebarOpen(false)} aria-label="Close menu" className="md:hidden" style={{ color: colors.subtle }}><X size={18} /></button>
         </div>
@@ -1003,7 +1012,7 @@ function Dashboard(props) {
                     {item.group}
                   </div>
                 )}
-                <button onClick={() => { setActiveTab(item.key); setSidebarOpen(false); }} className="nav-link flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors" style={{ background: active ? colors.wineSoft : "transparent", color: active ? colors.wine : colors.subtle, fontWeight: active ? 600 : 500 }}>
+                <button onClick={() => { setActiveTab(item.key); setSidebarOpen(false); }} className={`nav-link flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors `} style={{ background: active ? colors.wineSoft : "transparent", color: active ? colors.wine : colors.subtle, fontWeight: active ? 600 : 500 }}>
                   <Icon size={16} />
                   {item.label}
                 </button>
@@ -1038,7 +1047,7 @@ function Dashboard(props) {
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="md:hidden" style={{ color: colors.subtle }}><Menu size={20} /></button>
             <div className="min-w-0">
-              <div style={{ fontFamily: serifFont, color: colors.ink }} className="text-lg md:text-xl truncate">{pageTitle}</div>
+              <div style={{ fontFamily: serifFont, color: colors.ink }} className="text-xl md:text-2xl leading-tight truncate">{pageTitle}</div>
               <div style={{ color: colors.subtle }} className="text-xs hidden sm:block">{isStylistView ? currentStylist?.role : isClientView ? "Your appointments and visit history" : formatDateLabel(selectedDate)}</div>
             </div>
           </div>
@@ -1071,7 +1080,7 @@ function Dashboard(props) {
               </div>
 
               {isClientView && reviewableAppointments.length > 0 && (
-                <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm mb-6">
+                <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card mb-6">
                   <div style={{ fontFamily: serifFont }} className="text-lg mb-3">How was your visit?</div>
                   {reviewableAppointments.map((a) => {
                     const draft = reviewDraft[a.id] || {};
@@ -1095,7 +1104,7 @@ function Dashboard(props) {
               )}
 
               <div className="grid md:grid-cols-3 gap-4 mb-6">
-                <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="md:col-span-2 rounded-lg p-5 shadow-sm">
+                <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="md:col-span-2 rounded-xl p-5 dash-card">
                   <div className="flex items-center justify-between mb-4">
                     <div style={{ fontFamily: serifFont }} className="text-lg">{isClientView ? "My upcoming visits" : isStylistView ? "My schedule" : "Today's schedule"}</div>
                     <button onClick={() => setActiveTab("appointments")} style={{ color: colors.wine }} className="text-xs font-medium">View all</button>
@@ -1116,7 +1125,7 @@ function Dashboard(props) {
                 </div>
 
                 {isManagerView && (
-                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                     <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Stylist leaderboard</div>
                     <div className="flex flex-col gap-4">
                       {leaderboard.map((s, i) => (
@@ -1134,7 +1143,7 @@ function Dashboard(props) {
                   </div>
                 )}
                 {isStylistView && (
-                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                     <div style={{ fontFamily: serifFont }} className="text-lg mb-4">My upcoming</div>
                     <div className="flex flex-col gap-3">
                       {overviewPreview.filter((a) => a.status === "confirmed").slice(0, 4).map((a) => (
@@ -1145,7 +1154,7 @@ function Dashboard(props) {
                   </div>
                 )}
                 {isClientView && (
-                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                     <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Book something new</div>
                     <div style={{ color: colors.subtle }} className="text-sm mb-4">Pick a service and we'll match you with the next available stylist.</div>
                     <button onClick={() => { setActiveTab("appointments"); resetForm(); setShowForm(true); }} className="btn-wine w-full px-4 py-2.5 rounded-md text-sm font-medium">Book appointment</button>
@@ -1155,7 +1164,7 @@ function Dashboard(props) {
 
               {!isClientView && (
                 <div className="grid md:grid-cols-3 gap-4">
-                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="md:col-span-2 rounded-lg p-5 shadow-sm">
+                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="md:col-span-2 rounded-xl p-5 dash-card">
                     <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Weekly revenue</div>
                     <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={weeklyRevenue}>
@@ -1167,7 +1176,7 @@ function Dashboard(props) {
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+                  <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                     <div style={{ fontFamily: serifFont }} className="text-lg mb-4">{isStylistView ? "My day" : "Today's status mix"}</div>
                     {statusBreakdown.length > 0 ? (
                       <ResponsiveContainer width="100%" height={220}>
@@ -1189,7 +1198,7 @@ function Dashboard(props) {
           )}
 
           {activeTab === "appointments" && (
-            <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg shadow-sm">
+            <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
               {(isManagerView || isStylistView) && (
                 <div style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center gap-2 p-4 flex-wrap">
                   <button onClick={() => setSelectedDate((d) => { const dt = new Date(d + "T00:00:00"); dt.setDate(dt.getDate() - 1); return dt.toISOString().slice(0, 10); })} aria-label="Previous day" style={{ border: `1px solid ${colors.border}` }} className="icon-btn w-8 h-8 rounded-md flex items-center justify-center"><ChevronLeft size={14} style={{ color: colors.subtle }} /></button>
@@ -1201,7 +1210,7 @@ function Dashboard(props) {
               <div style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center justify-between p-5 flex-wrap gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   {isManagerView && (
-                    <select value={stylistFilter} onChange={(e) => setStylistFilter(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-2 py-1.5 rounded-md">
+                    <select value={stylistFilter} onChange={(e) => setStylistFilter(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-3 py-2 rounded-lg">
                       <option>All</option>
                       {stylists.map((s) => <option key={s.id}>{s.name}</option>)}
                     </select>
@@ -1226,12 +1235,12 @@ function Dashboard(props) {
                       </Field>
                     )}
                     <Field label="Service">
-                      <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm">
+                      <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
                         {Object.keys(services).map((s) => <option key={s}>{s} ({services[s].duration}m)</option>)}
                       </select>
                     </Field>
                     <Field label="Stylist">
-                      <select value={form.stylist} onChange={(e) => setForm({ ...form, stylist: e.target.value })} disabled={isStylistView} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm">
+                      <select value={form.stylist} onChange={(e) => setForm({ ...form, stylist: e.target.value })} disabled={isStylistView} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
                         {(isClientView || !editingId) && <option>No preference</option>}
                         {stylists.filter((s) => s.active).map((s) => <option key={s.id}>{s.name}</option>)}
                       </select>
@@ -1256,7 +1265,7 @@ function Dashboard(props) {
               )}
 
               <div className="p-2">
-                {filteredAppointments.length === 0 && <div style={{ color: colors.subtle }} className="text-sm text-center py-10">No appointments match these filters.</div>}
+                {filteredAppointments.length === 0 && <div style={{ color: colors.subtle }} className="text-sm text-center py-14 flex flex-col items-center gap-2"><CalendarDays size={28} style={{ color: colors.rose }} />No appointments match these filters.</div>}
                 {filteredAppointments.map((a) => (
                   <div key={a.id} style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center justify-between px-3 py-3 text-sm gap-2">
                     <div className="flex items-center gap-3 min-w-0">
@@ -1298,7 +1307,7 @@ function Dashboard(props) {
           )}
 
           {activeTab === "clients" && isManagerView && (
-            <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg shadow-sm">
+            <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
               <div style={{ borderBottom: `1px solid ${colors.border}` }} className="p-5">
                 <div style={{ border: `1px solid ${colors.border}` }} className="flex items-center gap-2 px-3 py-2 rounded-md w-full md:w-72">
                   <Search size={14} style={{ color: colors.subtle }} />
@@ -1309,11 +1318,11 @@ function Dashboard(props) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ color: colors.subtle, borderBottom: `1px solid ${colors.border}` }} className="text-left">
-                      <th className="font-medium py-2 px-5">Client</th>
-                      <th className="font-medium py-2 px-5">Phone</th>
-                      <th className="font-medium py-2 px-5">Visits</th>
-                      <th className="font-medium py-2 px-5">Last visit</th>
-                      <th className="font-medium py-2 px-5">Total spend</th>
+                      <th className="font-semibold py-3 px-5">Client</th>
+                      <th className="font-semibold py-3 px-5">Phone</th>
+                      <th className="font-semibold py-3 px-5">Visits</th>
+                      <th className="font-semibold py-3 px-5">Last visit</th>
+                      <th className="font-semibold py-3 px-5">Total spend</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1348,7 +1357,7 @@ function Dashboard(props) {
                   const isEditing = editingStylistId === s.id;
                   if (isEditing) {
                     return (
-                      <div key={s.id} style={{ background: colors.cardBg, border: `1px solid ${colors.wine}` }} className="rounded-lg p-5 shadow-sm flex flex-col gap-2">
+                      <div key={s.id} style={{ background: colors.cardBg, border: `1px solid ${colors.wine}` }} className="rounded-xl p-5 dash-card flex flex-col gap-2">
                         <Field label="Name"><input value={stylistEditDraft.name} onChange={(e) => setStylistEditDraft({ ...stylistEditDraft, name: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
                         <Field label="Title"><input value={stylistEditDraft.role} onChange={(e) => setStylistEditDraft({ ...stylistEditDraft, role: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
                         <Field label="Photo URL"><input value={stylistEditDraft.photoUrl} onChange={(e) => setStylistEditDraft({ ...stylistEditDraft, photoUrl: e.target.value })} placeholder="https://..." style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
@@ -1361,7 +1370,7 @@ function Dashboard(props) {
                     );
                   }
                   return (
-                    <div key={s.id} style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm flex items-center justify-between gap-2">
+                    <div key={s.id} style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card flex items-center justify-between gap-2">
                       <div className="flex items-center gap-3 min-w-0">
                         {s.photoUrl ? <img src={s.photoUrl} alt={s.name} className="w-11 h-11 rounded-full object-cover flex-shrink-0" /> : <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-11 h-11 rounded-full flex items-center justify-center font-medium flex-shrink-0">{initials(s.name)}</div>}
                         <div className="min-w-0">
@@ -1380,7 +1389,7 @@ function Dashboard(props) {
                   );
                 })}
               </div>
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Add a stylist</div>
                 <div className="flex items-end gap-3 flex-wrap">
                   <Field label="Name"><input value={newStylist.name} onChange={(e) => setNewStylist({ ...newStylist, name: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" placeholder="Full name" /></Field>
@@ -1395,15 +1404,15 @@ function Dashboard(props) {
 
           {activeTab === "inventory" && isManagerView && (
             <div className="flex flex-col gap-4">
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg shadow-sm overflow-x-auto">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ color: colors.subtle, borderBottom: `1px solid ${colors.border}` }} className="text-left">
-                      <th className="font-medium py-2 px-5">Item</th>
-                      <th className="font-medium py-2 px-5">Category</th>
-                      <th className="font-medium py-2 px-5">Unit cost</th>
-                      <th className="font-medium py-2 px-5">Quantity</th>
-                      <th className="font-medium py-2 px-5">Status</th>
+                      <th className="font-semibold py-3 px-5">Item</th>
+                      <th className="font-semibold py-3 px-5">Category</th>
+                      <th className="font-semibold py-3 px-5">Unit cost</th>
+                      <th className="font-semibold py-3 px-5">Quantity</th>
+                      <th className="font-semibold py-3 px-5">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1434,7 +1443,7 @@ function Dashboard(props) {
                   </tbody>
                 </table>
               </div>
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Add inventory item</div>
                 <div className="flex items-end gap-3 flex-wrap">
                   <Field label="Name"><input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" /></Field>
@@ -1461,7 +1470,7 @@ function Dashboard(props) {
                 <StatCard label="Average ticket" value={`$${avgTicket}`} sub="per completed visit" />
                 <StatCard label="Cancellation rate" value={`${cancellationRate}%`} sub={`this ${reportRange}`} />
               </div>
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Revenue by service</div>
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={revenueByService} layout="vertical" margin={{ left: 40 }}>
@@ -1502,7 +1511,7 @@ function Dashboard(props) {
 
           {activeTab === "website" && isAdmin && (
             <div className="flex flex-col gap-4 max-w-3xl">
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Hero section</div>
                 <div className="flex flex-col gap-3">
                   <Field label="Headline"><input value={siteDraft.heroHeadline} onChange={(e) => setSiteDraft({ ...siteDraft, heroHeadline: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
@@ -1510,7 +1519,7 @@ function Dashboard(props) {
                 </div>
               </div>
 
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-1">Featured services</div>
                 <div style={{ color: colors.subtle }} className="text-xs mb-4">Check the ones to show on the landing page, and optionally add a photo for each.</div>
                 <div className="flex flex-col gap-3">
@@ -1533,7 +1542,7 @@ function Dashboard(props) {
                 </div>
               </div>
 
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-4">FAQs</div>
                 <div className="flex flex-col gap-2 mb-4">
                   {siteDraft.faqs.map((f) => (
@@ -1550,7 +1559,7 @@ function Dashboard(props) {
                 </div>
               </div>
 
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Contact, hours & policy</div>
                 <div className="grid sm:grid-cols-2 gap-3 mb-3">
                   <Field label="Phone"><input value={siteDraft.contactPhone} onChange={(e) => setSiteDraft({ ...siteDraft, contactPhone: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
@@ -1566,7 +1575,7 @@ function Dashboard(props) {
           )}
 
           {activeTab === "audit" && isAdmin && (
-            <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg shadow-sm">
+            <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
               {auditLog.length === 0 && <div style={{ color: colors.subtle }} className="text-sm text-center py-10">No activity recorded yet.</div>}
               {auditLog.map((log) => (
                 <div key={log.id} style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center justify-between px-4 py-3 text-sm gap-2">
@@ -1587,7 +1596,7 @@ function Dashboard(props) {
 
           {activeTab === "settings" && (
             <div className="flex flex-col gap-4 max-w-2xl">
-              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+              <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-4">{isClientView ? "My profile" : isStylistView ? "My profile" : "Salon profile"}</div>
                 {isAdmin && (
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -1621,7 +1630,7 @@ function Dashboard(props) {
               </div>
 
               {isAdmin && (
-                <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
+                <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                   <div style={{ fontFamily: serifFont }} className="text-lg mb-1">Manage services</div>
                   <div style={{ color: colors.subtle }} className="text-xs mb-4">Add, reprice, or remove what the salon offers. Names can't be edited once created, since past appointments reference them by name.</div>
                   <div className="flex flex-col gap-2 mb-4">
@@ -1660,16 +1669,16 @@ function Dashboard(props) {
 function StatCard({ label, value, sub, trend }) {
   const { colors } = useTheme();
   return (
-    <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-lg p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-2">
-        <div style={{ color: colors.subtle }} className="text-xs">{label}</div>
+    <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="stat-card dash-card rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3 gap-2">
+        <div style={{ color: colors.subtle }} className="text-[11px] font-semibold uppercase tracking-wider">{label}</div>
         {trend !== null && trend !== undefined && (
-          <div style={{ color: trend >= 0 ? colors.success : colors.danger }} className="text-xs font-medium flex items-center gap-0.5">
+          <div style={{ color: trend >= 0 ? colors.success : colors.danger, background: trend >= 0 ? colors.successSoft : colors.dangerSoft }} className="text-[11px] font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded-full">
             {trend >= 0 ? "▲" : "▼"} {Math.abs(trend)}%
           </div>
         )}
       </div>
-      <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-xl md:text-2xl mb-1">{value}</div>
+      <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-2xl md:text-3xl leading-none mb-2">{value}</div>
       <div style={{ color: colors.subtle }} className="text-xs">{sub}</div>
     </div>
   );
