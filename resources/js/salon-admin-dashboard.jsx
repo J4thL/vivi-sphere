@@ -52,6 +52,15 @@ async function apiDelete(path, token) {
     return res.ok;
   } catch { return false; }
 }
+/* Keeps the login across page refreshes. Wrapped in try/catch because browser
+ * storage can be blocked (private windows, strict privacy settings). */
+const TOKEN_KEY = "vivi.token";
+const savedToken = {
+  get() { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } },
+  set(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch { /* ignore */ } },
+  clear() { try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ } },
+};
+
 function firstError(json) {
   const errs = json?.errors;
   if (!errs) return null;
@@ -375,6 +384,7 @@ export default function App() {
   const [screen, setScreen] = useState("login");
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [resetInfo, setResetInfo] = useState(null);
 
   // When mounted inside the real Laravel app (see spa.blade.php / routes/web.php),
   // the marketing pages are server-rendered Blade views, not this component's
@@ -387,6 +397,11 @@ export default function App() {
     if (path === "/app" || path === "/app/") { window.location.href = "/"; return; }
     if (path.endsWith("/login")) setScreen("login");
     else if (path.endsWith("/register")) setScreen("register");
+    else if (path.includes("/reset-password/")) {
+      // Link from the password-reset email: /app/reset-password/{token}?email=...
+      setResetInfo({ token: decodeURIComponent(path.split("/reset-password/")[1] || ""), email: new URLSearchParams(window.location.search).get("email") || "" });
+      setScreen("reset");
+    }
   }, []);
 
   const [appointments, setAppointments] = useState([]);
@@ -421,6 +436,14 @@ export default function App() {
       }
       if (stylistsRes) setStylists(stylistsRes.map(normalizeStylist));
       if (reviewsRes) setReviews(reviewsRes.map(normalizeReview));
+
+      // Restore the previous session so a page refresh doesn't log people out.
+      const saved = savedToken.get();
+      if (saved) {
+        const me = await apiGet("/auth/me", saved);
+        if (me?.id) { setUser(me); setToken(saved); setScreen("app"); }
+        else savedToken.clear();
+      }
       setBootLoading(false);
     })();
   }, []);
@@ -429,9 +452,18 @@ export default function App() {
     if (!token) return;
     (async () => {
       setDashLoading(true);
-      const [a, c, i, al, w] = await Promise.all([
-        apiGet("/appointments", token), apiGet("/clients", token), apiGet("/inventory", token), apiGet("/audit-log", token), apiGet("/waitlist", token),
+      // Only ask for what this role may see; the API answers 403 otherwise.
+      const isManager = user?.role === "admin" || user?.role === "manager";
+      const skip = Promise.resolve(null);
+      const [a, c, i, al, w, rv] = await Promise.all([
+        apiGet("/appointments", token),
+        isManager || user?.role === "client" ? apiGet("/clients", token) : skip,
+        isManager ? apiGet("/inventory", token) : skip,
+        user?.role === "admin" ? apiGet("/audit-log", token) : skip,
+        isManager ? apiGet("/waitlist", token) : skip,
+        isManager ? apiGet("/reviews", token) : skip, // managers also see pending/rejected reviews
       ]);
+      if (rv) setReviews(rv.map(normalizeReview));
       if (a) setAppointments(a.map(normalizeAppointment));
       if (c) setClients(c.map(normalizeClient));
       if (i) setInventory(i.map(normalizeInventoryItem));
@@ -451,18 +483,28 @@ export default function App() {
 
   const handleLogin = async ({ email, password }) => {
     const remote = await apiSend("/auth/login", "POST", { email, password });
-    if (remote && !remote.error && remote.user) { setUser(remote.user); setToken(remote.token); setScreen("app"); return; }
+    if (remote && !remote.error && remote.user) { savedToken.set(remote.token); setUser(remote.user); setToken(remote.token); setScreen("app"); return; }
     notify(remote?.message || "Couldn't reach the server. Is the API running?", "error");
   };
 
   const handleRegister = async ({ name, email, password }) => {
     const remote = await apiSend("/auth/register", "POST", { name, email, password });
-    if (remote && !remote.error && remote.user) { setUser(remote.user); setToken(remote.token); setScreen("app"); notify("Account created. Check your email to verify it."); return; }
+    if (remote && !remote.error && remote.user) { savedToken.set(remote.token); setUser(remote.user); setToken(remote.token); setScreen("app"); notify("Account created. Check your email to verify it."); return; }
     notify(remote?.message || "Couldn't reach the server. Is the API running?", "error");
   };
 
   const handleForgotPassword = async (email) => { await apiSend("/auth/forgot-password", "POST", { email }); notify("If an account exists for that email, we've sent a reset link."); };
-  const handleLogout = () => { apiSend("/auth/logout", "POST", {}, token); setUser(null); setToken(null); setScreen("login"); };
+  const handleLogout = () => { apiSend("/auth/logout", "POST", {}, token); savedToken.clear(); setUser(null); setToken(null); setScreen("login"); };
+  const handleResetPassword = async ({ password, confirm }) => {
+    const r = await apiSend("/auth/reset-password", "POST", { token: resetInfo.token, email: resetInfo.email, password, password_confirmation: confirm });
+    if (r && !r.error) {
+      window.history.replaceState(null, "", "/app/login");
+      setResetInfo(null); setScreen("login");
+      notify("Password updated. Log in with your new password.");
+      return;
+    }
+    notify(r?.message || "Couldn't reach the server. Is the API running?", "error");
+  };
   const resendVerification = async () => {
     const result = await apiSend("/auth/resend-verification", "POST", {}, token);
     if (result?.error) notify(result.message, "error"); else notify("Verification email sent (demo mode: nothing is actually delivered without a mail server).");
@@ -480,6 +522,7 @@ export default function App() {
   if (bootLoading) body = <BootLoader />;
   else if (screen === "login") body = <LoginPage onLogin={handleLogin} onGoRegister={() => setScreen("register")} onGoForgot={() => setScreen("forgot")} onBack={goToMarketingSite} />;
   else if (screen === "register") body = <RegisterPage onRegister={handleRegister} onGoLogin={() => setScreen("login")} onBack={goToMarketingSite} />;
+  else if (screen === "reset" && resetInfo) body = <ResetPasswordPage email={resetInfo.email} onSubmit={handleResetPassword} onBack={() => { window.history.replaceState(null, "", "/app/login"); setScreen("login"); }} />;
   else if (screen === "forgot") body = <ForgotPasswordPage onSubmit={handleForgotPassword} onBack={() => setScreen("login")} />;
   else {
     body = (
@@ -568,9 +611,9 @@ function LoginPage({ onLogin, onGoRegister, onGoForgot, onBack }) {
       <div style={{ fontFamily: serifFont }} className="text-xl mb-1">Welcome back</div>
       <div style={{ color: colors.subtle }} className="text-xs mb-6">Log in to manage your appointments.</div>
       <form onSubmit={submit} className="flex flex-col gap-3">
-        <LabeledInput label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
+        <LabeledInput label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoComplete="email" />
         <div>
-          <LabeledInput label="Password" type="password" value={password} onChange={setPassword} placeholder="********" />
+          <LabeledInput label="Password" type="password" value={password} onChange={setPassword} placeholder="********" autoComplete="current-password" />
           <button type="button" onClick={onGoForgot} style={{ color: colors.wine }} className="text-xs mt-1">Forgot your password?</button>
         </div>
         {error && <div style={{ color: colors.danger }} className="text-xs">{error}</div>}
@@ -606,13 +649,13 @@ function RegisterPage({ onRegister, onGoLogin, onBack }) {
       <div style={{ fontFamily: serifFont }} className="text-xl mb-1">Create your account</div>
       <div style={{ color: colors.subtle }} className="text-xs mb-6">Book appointments and track your visit history.</div>
       <form onSubmit={submit} className="flex flex-col gap-3">
-        <LabeledInput label="Full name" value={name} onChange={setName} placeholder="Jane Avery" />
-        <LabeledInput label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
+        <LabeledInput label="Full name" value={name} onChange={setName} placeholder="Jane Avery" autoComplete="name" />
+        <LabeledInput label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoComplete="email" />
         <div>
-          <LabeledInput label="Password" type="password" value={password} onChange={setPassword} placeholder="At least 8 characters" />
+          <LabeledInput label="Password" type="password" value={password} onChange={setPassword} placeholder="At least 8 characters" autoComplete="new-password" />
           {password && <div style={{ color: colors.subtle }} className="text-xs mt-1">Strength: {passwordScore(password)}</div>}
         </div>
-        <LabeledInput label="Confirm password" type="password" value={confirm} onChange={setConfirm} placeholder="********" />
+        <LabeledInput label="Confirm password" type="password" value={confirm} onChange={setConfirm} placeholder="********" autoComplete="new-password" />
         {error && <div style={{ color: colors.danger }} className="text-xs">{error}</div>}
         <button type="submit" className="btn-wine px-4 py-2.5 rounded-md text-sm font-medium mt-2">Create account</button>
       </form>
@@ -636,7 +679,7 @@ function ForgotPasswordPage({ onSubmit, onBack }) {
         <div style={{ background: colors.successSoft, color: colors.success }} className="text-sm px-3 py-2.5 rounded-md">If an account exists for that email, we've sent a reset link.</div>
       ) : (
         <form onSubmit={submit} className="flex flex-col gap-3">
-          <LabeledInput label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
+          <LabeledInput label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" autoComplete="email" />
           <button type="submit" className="btn-wine px-4 py-2.5 rounded-md text-sm font-medium mt-2">Send reset link</button>
         </form>
       )}
@@ -645,13 +688,39 @@ function ForgotPasswordPage({ onSubmit, onBack }) {
   );
 }
 
-function LabeledInput({ label, value, onChange, type = "text", placeholder }) {
+function ResetPasswordPage({ email, onSubmit, onBack }) {
+  const { colors } = useTheme();
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const submit = (e) => {
+    e.preventDefault();
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (password !== confirm) { setError("Passwords don't match."); return; }
+    setError("");
+    onSubmit({ password, confirm });
+  };
+  return (
+    <AuthShell onBack={onBack}>
+      <div style={{ fontFamily: serifFont }} className="text-xl mb-1">Choose a new password</div>
+      <div style={{ color: colors.subtle }} className="text-xs mb-6">{email ? `For ${email}` : "Enter a new password for your account."}</div>
+      <form onSubmit={submit} className="flex flex-col gap-3">
+        <LabeledInput label="New password" type="password" value={password} onChange={setPassword} placeholder="At least 8 characters" autoComplete="new-password" />
+        <LabeledInput label="Confirm password" type="password" value={confirm} onChange={setConfirm} placeholder="********" autoComplete="new-password" />
+        {error && <div style={{ color: colors.danger }} className="text-xs">{error}</div>}
+        <button type="submit" className="btn-wine px-4 py-2.5 rounded-md text-sm font-medium mt-2">Update password</button>
+      </form>
+    </AuthShell>
+  );
+}
+
+function LabeledInput({ label, value, onChange, type = "text", placeholder, autoComplete }) {
   const { colors } = useTheme();
   const id = `field-${label.replace(/\s+/g, "-").toLowerCase()}`;
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} style={{ color: colors.subtle }} className="text-xs">{label}</label>
-      <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2.5 rounded-lg text-sm" />
+      <input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2.5 rounded-lg text-sm" />
     </div>
   );
 }

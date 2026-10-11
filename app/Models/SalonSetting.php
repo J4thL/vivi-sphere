@@ -24,12 +24,17 @@ class SalonSetting extends Model
     /** There's only ever one row: fetch it, or create sensible defaults. */
     public static function current(): self
     {
-        return static::firstOrCreate([], [
+        $settings = static::firstOrCreate([], [
             'hero_headline' => 'A salon that plans your whole visit, not just your appointment',
             'hero_sub' => "Book with your favorite stylist, track your visit history, and see exactly what your next appointment will cost.",
             'featured_services' => [],
             'testimonials' => [],
             'faqs' => [],
         ]);
+
+        // A freshly inserted row only holds the attributes we passed in; reload it so
+        // column defaults (salon_name, open_time, close_time) are present on the very
+        // first request after a new install instead of null.
+        return $settings->wasRecentlyCreated ? $settings->refresh() : $settings;
     }
 }

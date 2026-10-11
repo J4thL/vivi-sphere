@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Web\EmailLinkController;
 use App\Http\Controllers\Web\PublicPageController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,11 @@ Route::get('/', [PublicPageController::class, 'landing'])->name('landing');
 Route::get('/stylists/{stylist}', [PublicPageController::class, 'stylistProfile'])->name('stylist.profile');
 Route::get('/terms', [PublicPageController::class, 'legal'])->defaults('kind', 'terms')->name('terms');
 Route::get('/privacy', [PublicPageController::class, 'legal'])->defaults('kind', 'privacy')->name('privacy');
+
+// Targets for links inside Laravel's built-in emails. Registration and
+// forgot-password both generate these by route name and crash without them.
+Route::get('/email/verify/{id}/{hash}', [EmailLinkController::class, 'verify'])->middleware('signed')->name('verification.verify');
+Route::get('/app/reset-password/{token}', fn () => view('spa'))->name('password.reset');
 
 // Catch-all: /app, /app/login, /app/register, /app/anything-the-SPA-handles
 // all serve the same shell; React's own state decides what to show.

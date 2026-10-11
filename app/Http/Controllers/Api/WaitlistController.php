@@ -33,6 +33,10 @@ class WaitlistController extends Controller
             $data['client_name'] = $client->name;
         }
 
+        if (empty($data['client_name']) && ! empty($data['client_id'])) {
+            $data['client_name'] = Client::findOrFail($data['client_id'])->name;
+        }
+
         $entry = WaitlistEntry::create($data + ['status' => 'waiting']);
 
         return response()->json($entry, 201);

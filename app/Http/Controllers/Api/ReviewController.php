@@ -12,7 +12,7 @@ class ReviewController extends Controller
     /** Public: approved reviews only, for the landing page. */
     public function index(Request $request)
     {
-        if ($request->user()?->isManager()) {
+        if ($request->user('sanctum')?->isManager()) {
             return Review::with(['client', 'stylist'])->latest()->get();
         }
         return Review::with(['client', 'stylist'])->where('status', 'approved')->latest()->get();

@@ -10,6 +10,7 @@ use App\Models\SalonSetting;
 use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends Controller
@@ -76,7 +77,7 @@ class AppointmentController extends Controller
         $data = $request->validate([
             'client_name' => ['required_without:client_id', 'string'],
             'client_id' => ['nullable', 'exists:clients,id'],
-            'stylist_id' => ['required', 'exists:stylists,id'],
+            'stylist_id' => ['required', Rule::exists('stylists', 'id')->where('active', true)],
             'service_id' => ['required', 'exists:services,id'],
             'scheduled_at' => ['required', 'date'],
         ]);
@@ -165,7 +166,7 @@ class AppointmentController extends Controller
         $previousStatus = $appointment->status;
         $appointment->update($data);
 
-        if (($data['status'] ?? null) === 'completed') {
+        if (($data['status'] ?? null) === 'completed' && $previousStatus !== 'completed') {
             $client = $appointment->client;
             $client->increment('visits');
             $client->increment('spend', $appointment->price);
