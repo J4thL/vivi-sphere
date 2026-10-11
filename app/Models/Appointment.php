@@ -16,7 +16,9 @@ class Appointment extends Model
     protected function casts(): array
     {
         return [
-            'scheduled_at' => 'datetime',
+            // Plain "Y-m-d H:i:s" (salon local time). The default ISO format ends in "Z", which wrongly
+            // labels local time as UTC and is not what the dashboard parses.
+            'scheduled_at' => 'datetime:Y-m-d H:i:s',
             'price' => 'decimal:2',
         ];
     }

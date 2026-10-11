@@ -52,6 +52,7 @@ php artisan storage:link
 - Responses carry security headers and a Content-Security-Policy (`app/Http/Middleware/SecurityHeaders.php`).
   If you add third-party scripts (analytics, chat widgets), allow their origins there.
 - Behind a load balancer or proxy, configure trusted proxies so HTTPS is detected and HSTS is sent.
+- Appointment times are the salon's local time, set by `SALON_TIMEZONE` (default `Asia/Manila`, which covers Davao). Leave `APP_TIMEZONE` at UTC.
 - API tokens expire after 7 days (`SANCTUM_EXPIRATION`), and a password reset signs out every device.
   When a token expires the dashboard returns to the login screen and says so.
 

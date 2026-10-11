@@ -83,10 +83,16 @@ class AppointmentController extends Controller
         return $start->gte($open) && $start->copy()->addMinutes($durationMinutes)->lte($close);
     }
 
-    /** Bookings must not start in the past (15 minutes of grace covers walk-ins entered on arrival). */
+    /**
+     * Bookings must not start in the past (15 minutes of grace covers walk-ins entered on arrival).
+     * $start is the salon's wall-clock time, so it is compared with the salon's current wall-clock
+     * time rather than the application's UTC clock.
+     */
     private function assertNotInPast(Carbon $start): void
     {
-        if ($start->lt(now()->subMinutes(15))) {
+        $salonNow = Carbon::parse(now(config('app.salon_timezone'))->toDateTimeString());
+
+        if ($start->lt($salonNow->subMinutes(15))) {
             throw ValidationException::withMessages(['scheduled_at' => 'That time has already passed. Pick a future time.']);
         }
     }

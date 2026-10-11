@@ -2,10 +2,23 @@ import { BarChart3, CalendarDays, Globe, LayoutDashboard, Package, Scissors, Set
 
 /* -------------------------------- Constants -------------------------------- */
 
+// A date as YYYY-MM-DD in the browser's local timezone. toISOString() would give the UTC date,
+// which is the wrong day for several hours every day anywhere ahead of UTC (e.g. the Philippines).
+export function localDateStr(d) {
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+}
 export function todayStr(offset = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
-  return d.toISOString().slice(0, 10);
+  return localDateStr(d);
+}
+// Moves a YYYY-MM-DD date forward or back by whole days.
+export function addDays(dateStr, n) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return localDateStr(d);
 }
 export function formatDateLabel(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
@@ -45,7 +58,7 @@ export function computeWeeklyRevenue(appointments, services) {
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    days.push(d.toISOString().slice(0, 10));
+    days.push(localDateStr(d));
   }
   return days.map((dateStr) => {
     const label = new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" });

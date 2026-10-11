@@ -158,7 +158,7 @@ class Tier1HardeningTest extends TestCase
 
     public function test_bookings_in_the_past_are_rejected_with_a_short_grace_period(): void
     {
-        $this->travelTo(Carbon::parse('2026-10-14 10:00:00'));
+        $this->travelTo(Carbon::parse('2026-10-14 10:00:00', config('app.salon_timezone')));
         Sanctum::actingAs($this->user('client'));
         $stylist = $this->stylist();
         $service = $this->service();
@@ -174,7 +174,7 @@ class Tier1HardeningTest extends TestCase
 
     public function test_cannot_reschedule_into_the_past(): void
     {
-        $this->travelTo(Carbon::parse('2026-10-14 10:00:00'));
+        $this->travelTo(Carbon::parse('2026-10-14 10:00:00', config('app.salon_timezone')));
         $admin = $this->user('admin');
         Sanctum::actingAs($admin);
         $appt = $this->appointment(Client::create(['name' => 'X']), '2026-10-15 10:00:00');
@@ -186,7 +186,7 @@ class Tier1HardeningTest extends TestCase
 
     public function test_client_can_only_modify_confirmed_appointments(): void
     {
-        $this->travelTo(Carbon::parse('2026-10-14 08:00:00'));
+        $this->travelTo(Carbon::parse('2026-10-14 08:00:00', config('app.salon_timezone')));
         $me = $this->user('client');
         $client = Client::create(['user_id' => $me->id, 'name' => $me->name]);
         $done = $this->appointment($client, '2026-10-14 08:30:00', 'completed');
@@ -201,7 +201,7 @@ class Tier1HardeningTest extends TestCase
 
     public function test_stylist_cannot_hand_their_appointment_to_another_stylist_but_manager_can(): void
     {
-        $this->travelTo(Carbon::parse('2026-10-14 08:00:00'));
+        $this->travelTo(Carbon::parse('2026-10-14 08:00:00', config('app.salon_timezone')));
         $mine = $this->stylist();
         $other = $this->stylist();
         $stylistUser = $this->user('stylist', ['stylist_id' => $mine->id]);

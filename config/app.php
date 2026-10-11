@@ -69,6 +69,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Salon Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Appointment times are the salon's own wall-clock time (Davao is UTC+8, with
+    | no daylight saving). They are stored and sent as "YYYY-MM-DD HH:MM:SS" with no
+    | timezone, and compared with "now" in this zone. The application timezone above
+    | stays UTC so every other stored timestamp (tokens, password resets) is unaffected.
+    |
+    */
+
+    'salon_timezone' => env('SALON_TIMEZONE', 'Asia/Manila'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

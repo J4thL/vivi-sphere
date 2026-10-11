@@ -43,7 +43,7 @@ class Tier2PerformanceTest extends TestCase
 
     public function test_overlap_check_only_reads_the_same_day_but_still_detects_conflicts(): void
     {
-        $this->travelTo(Carbon::parse('2026-10-14 08:00:00'));
+        $this->travelTo(Carbon::parse('2026-10-14 08:00:00', config('app.salon_timezone')));
         [$client, $stylist, $service] = $this->world();
         foreach (range(1, 30) as $i) { // a long history that must not be loaded for a new booking
             $this->appt($client, $stylist, $service, '2026-09-'.str_pad((string) (($i % 27) + 1), 2, '0', STR_PAD_LEFT).' 10:00:00', 'completed');

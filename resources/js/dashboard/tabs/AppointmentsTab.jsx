@@ -1,5 +1,5 @@
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, Play, Plus, X } from "lucide-react";
-import { STATUS_META, initials, statusColor, todayStr } from "../helpers.js";
+import { STATUS_META, addDays, initials, statusColor, todayStr } from "../helpers.js";
 import { serifFont, useTheme } from "../theme.jsx";
 import { Field, IconBtn } from "../ui.jsx";
 
@@ -10,9 +10,9 @@ export default function AppointmentsTab({ ctx }) {
     <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
       {(isManagerView || isStylistView) && (
         <div style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center gap-2 p-4 flex-wrap">
-          <button onClick={() => setSelectedDate((d) => { const dt = new Date(d + "T00:00:00"); dt.setDate(dt.getDate() - 1); return dt.toISOString().slice(0, 10); })} aria-label="Previous day" style={{ border: `1px solid ${colors.border}` }} className="icon-btn w-8 h-8 rounded-md flex items-center justify-center"><ChevronLeft size={14} style={{ color: colors.subtle }} /></button>
+          <button onClick={() => setSelectedDate((d) => addDays(d, -1))} aria-label="Previous day" style={{ border: `1px solid ${colors.border}` }} className="icon-btn w-8 h-8 rounded-md flex items-center justify-center"><ChevronLeft size={14} style={{ color: colors.subtle }} /></button>
           <input type="date" aria-label="Appointment date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-2 py-1.5 rounded-md" />
-          <button onClick={() => setSelectedDate((d) => { const dt = new Date(d + "T00:00:00"); dt.setDate(dt.getDate() + 1); return dt.toISOString().slice(0, 10); })} aria-label="Next day" style={{ border: `1px solid ${colors.border}` }} className="icon-btn w-8 h-8 rounded-md flex items-center justify-center"><ChevronRight size={14} style={{ color: colors.subtle }} /></button>
+          <button onClick={() => setSelectedDate((d) => addDays(d, 1))} aria-label="Next day" style={{ border: `1px solid ${colors.border}` }} className="icon-btn w-8 h-8 rounded-md flex items-center justify-center"><ChevronRight size={14} style={{ color: colors.subtle }} /></button>
           <button onClick={() => setSelectedDate(todayStr(0))} style={{ color: colors.wine }} className="text-xs font-medium px-2">Today</button>
         </div>
       )}
