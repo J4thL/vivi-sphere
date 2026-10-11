@@ -4,13 +4,19 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "lint": "eslint ."
     },
     "devDependencies": {
+        "@eslint/js": "^9.39.5",
         "@tailwindcss/postcss": "^4.3.3",
         "@tailwindcss/vite": "^4.0.0",
         "autoprefixer": "^10.6.1",
         "concurrently": "^9.0.1",
+        "eslint": "^9.39.5",
+        "eslint-plugin-react": "^7.37.5",
+        "eslint-plugin-react-hooks": "^7.1.1",
+        "globals": "^17.13.0",
         "laravel-vite-plugin": "^2.0.0",
         "postcss": "^8.5.28",
         "tailwindcss": "^4.3.3",
