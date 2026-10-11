@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useContext, createContext } from "react";
+import React, { useState, useMemo, useEffect, useRef, useContext, createContext, lazy, Suspense } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Scissors, Package, BarChart3,
   Settings as SettingsIcon, Globe, Search, Plus, Check, X, Play, Minus,
@@ -6,9 +6,13 @@ import {
   Pencil, ChevronLeft, ChevronRight, Star,
   ClipboardList, ShieldCheck,
 } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
-} from "recharts";
+// Charts live in dashboard-charts.jsx and load on demand (recharts is a large library).
+const WeeklyRevenueChart = lazy(() => import("./dashboard-charts.jsx").then((m) => ({ default: m.WeeklyRevenueChart })));
+const StatusPieChart = lazy(() => import("./dashboard-charts.jsx").then((m) => ({ default: m.StatusPieChart })));
+const RevenueByServiceChart = lazy(() => import("./dashboard-charts.jsx").then((m) => ({ default: m.RevenueByServiceChart })));
+function ChartPlaceholder({ height }) {
+  return <div role="status" aria-label="Loading chart" style={{ height }} className="animate-pulse rounded-lg opacity-30 bg-current" />;
+}
 
 /* -------------------------------------------------------------------------
  * API LAYER
@@ -71,9 +75,9 @@ function firstError(json) {
 /* ---------------------------------- Theme --------------------------------- */
 
 const LIGHT_COLORS = {
-  bgApp: "#FFFFFF", wine: "#7A3956", wineSoft: "#F3E4EA", rose: "#C97C96",
-  roseSoft: "#F8ECF0", ink: "#2E2229", subtle: "#8C7A82", border: "#EFE4E9",
-  success: "#5B7B5A", successSoft: "#E9F0E8", danger: "#B0453F", dangerSoft: "#F7E9E7",
+  bgApp: "#FFFFFF", wine: "#7A3956", wineSoft: "#F3E4EA", rose: "#C97C96", // rose is for fills/icons only (3.1:1); text uses wine/subtle
+  roseSoft: "#F8ECF0", ink: "#2E2229", subtle: "#6B5961", border: "#EFE4E9", // subtle darkened from #8C7A82: now >=5.3:1 on every light surface (WCAG AA)
+  success: "#456644", successSoft: "#E9F0E8", danger: "#B0453F", dangerSoft: "#F7E9E7",
   warn: "#8A6A0E", warnSoft: "#FBF1D8", cardBg: "#FFFFFF", pageBg: "#FDFBFC",
 };
 const DARK_COLORS = {
@@ -99,7 +103,6 @@ function GlobalStyle() {
   const { colors } = useTheme();
   return (
     <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap');
       body { font-family: ${sansFont}; -webkit-font-smoothing: antialiased; }
       button, a, input, select, textarea { transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, transform 0.1s ease; }
       button { cursor: pointer; }
@@ -216,7 +219,7 @@ const STATUS_META = {
   completed: { label: "Completed" }, cancelled: { label: "Cancelled" },
 };
 function statusColor(status, colors) {
-  return { confirmed: colors.subtle, "in-progress": colors.rose, completed: colors.success, cancelled: colors.danger }[status];
+  return { confirmed: colors.subtle, "in-progress": colors.wine, completed: colors.success, cancelled: colors.danger }[status];
 }
 function initials(name) {
   return (name || "?").split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
@@ -1270,28 +1273,12 @@ function Dashboard(props) {
                 <div className="grid md:grid-cols-3 gap-4">
                   <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="md:col-span-2 rounded-xl p-5 dash-card">
                     <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Weekly revenue</div>
-                    <ResponsiveContainer width="100%" height={220}>
-                      <BarChart data={weeklyRevenue}>
-                        <CartesianGrid stroke={colors.border} vertical={false} />
-                        <XAxis dataKey="day" tick={{ fontSize: 12, fill: colors.subtle }} axisLine={{ stroke: colors.border }} tickLine={false} />
-                        <YAxis tick={{ fontSize: 12, fill: colors.subtle }} axisLine={false} tickLine={false} />
-                        <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${colors.border}`, fontSize: 12, background: colors.cardBg, color: colors.ink }} />
-                        <Bar dataKey="revenue" fill={colors.rose} radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <Suspense fallback={<ChartPlaceholder height={220} />}><WeeklyRevenueChart data={weeklyRevenue} colors={colors} /></Suspense>
                   </div>
                   <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                     <div style={{ fontFamily: serifFont }} className="text-lg mb-4">{isStylistView ? "My day" : "Today's status mix"}</div>
                     {statusBreakdown.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={220}>
-                        <PieChart>
-                          <Pie data={statusBreakdown} dataKey="value" nameKey="name" innerRadius={45} outerRadius={75} paddingAngle={2}>
-                            {statusBreakdown.map((entry) => <Cell key={entry.status} fill={statusColor(entry.status, colors)} />)}
-                          </Pie>
-                          <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${colors.border}`, fontSize: 12, background: colors.cardBg, color: colors.ink }} />
-                          <Legend wrapperStyle={{ fontSize: 12, color: colors.subtle }} />
-                        </PieChart>
-                      </ResponsiveContainer>
+                      <Suspense fallback={<ChartPlaceholder height={220} />}><StatusPieChart data={statusBreakdown} colors={colors} statusColor={statusColor} /></Suspense>
                     ) : (
                       <div style={{ color: colors.subtle }} className="text-sm h-[220px] flex items-center justify-center text-center">Nothing scheduled for this day yet.</div>
                     )}
@@ -1576,15 +1563,7 @@ function Dashboard(props) {
               </div>
               <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
                 <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Revenue by service</div>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={revenueByService} layout="vertical" margin={{ left: 40 }}>
-                    <CartesianGrid stroke={colors.border} horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 12, fill: colors.subtle }} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="service" tick={{ fontSize: 12, fill: colors.subtle }} axisLine={false} tickLine={false} width={130} />
-                    <Tooltip contentStyle={{ borderRadius: 8, border: `1px solid ${colors.border}`, fontSize: 12, background: colors.cardBg, color: colors.ink }} />
-                    <Bar dataKey="revenue" fill={colors.wine} radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<ChartPlaceholder height={240} />}><RevenueByServiceChart data={revenueByService} colors={colors} /></Suspense>
               </div>
             </div>
           )}

@@ -45,3 +45,14 @@
         </div>
     </div>
 </header>
+{{-- Closes the mobile menu after tapping a link, pressing Esc, or tapping outside it. --}}
+<script nonce="{{ Vite::cspNonce() }}">
+    (function () {
+        var menu = document.querySelector('header details');
+        if (!menu) return;
+        var close = function () { menu.removeAttribute('open'); };
+        menu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+        document.addEventListener('click', function (e) { if (!menu.contains(e.target)) close(); });
+    })();
+</script>

@@ -32,8 +32,16 @@ class AppointmentController extends Controller
             $query->whereHas('client', fn ($q) => $q->where('user_id', $user->id));
         }
 
+        // Range comparisons (not whereDate()) so the scheduled_at index can be used.
         if ($request->filled('date')) {
-            $query->whereDate('scheduled_at', $request->query('date'));
+            $day = Carbon::parse($request->query('date'));
+            $query->whereBetween('scheduled_at', [$day->copy()->startOfDay(), $day->copy()->endOfDay()]);
+        }
+        if ($request->filled('from')) {
+            $query->where('scheduled_at', '>=', Carbon::parse($request->query('from'))->startOfDay());
+        }
+        if ($request->filled('to')) {
+            $query->where('scheduled_at', '<=', Carbon::parse($request->query('to'))->endOfDay());
         }
 
         return $query->orderBy('scheduled_at')->get();
@@ -49,7 +57,10 @@ class AppointmentController extends Controller
     {
         $end = $start->copy()->addMinutes($durationMinutes);
 
+        // Appointments never cross midnight (they must fit inside opening hours), so only
+        // that stylist's appointments on the same day can overlap - no need to load their history.
         return Appointment::where('stylist_id', $stylistId)
+            ->whereBetween('scheduled_at', [$start->copy()->startOfDay(), $start->copy()->endOfDay()])
             ->where('status', '!=', 'cancelled')
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
             ->with('service')
