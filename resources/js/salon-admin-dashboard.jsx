@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useContext, createContext } from "react";
+import React, { useState, useMemo, useEffect, useRef, useContext, createContext } from "react";
 import {
   LayoutDashboard, CalendarDays, Users, Scissors, Package, BarChart3,
   Settings as SettingsIcon, Globe, Search, Plus, Check, X, Play, Minus,
@@ -328,13 +328,38 @@ function NotifyBanner({ notice }) {
 
 function ConfirmModal({ confirm, onCancel, onConfirm }) {
   const { colors } = useTheme();
+  const dialogRef = useRef(null);
+  const cancelRef = useRef(null);
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel; // the parent passes a new function every render; don't re-run the effect for it
+
+  // Accessible dialog behaviour: Esc cancels, focus moves into the dialog (on the safe
+  // "Cancel" button), Tab stays inside it, and focus returns to where it was on close.
+  useEffect(() => {
+    if (!confirm) return undefined;
+    const previouslyFocused = document.activeElement;
+    cancelRef.current?.focus();
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); onCancelRef.current(); return; }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusable = dialogRef.current.querySelectorAll("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); previouslyFocused?.focus?.(); };
+  }, [confirm]);
+
   if (!confirm) return null;
   return (
     <div style={{ background: "rgba(0,0,0,0.35)" }} className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 max-w-sm w-full dash-card">
-        <div className="text-sm mb-4">{confirm.message}</div>
+      <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-message" style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 max-w-sm w-full dash-card">
+        <div id="confirm-dialog-message" className="text-sm mb-4">{confirm.message}</div>
         <div className="flex justify-end gap-2">
-          <button onClick={onCancel} style={{ color: colors.subtle }} className="text-sm px-3 py-1.5">Cancel</button>
+          <button ref={cancelRef} onClick={onCancel} style={{ color: colors.subtle }} className="text-sm px-3 py-1.5">Cancel</button>
           <button onClick={onConfirm} style={{ background: colors.danger, color: "#fff" }} className="text-sm px-3 py-1.5 rounded-md font-medium">{confirm.confirmLabel || "Confirm"}</button>
         </div>
       </div>
@@ -1281,7 +1306,7 @@ function Dashboard(props) {
               {(isManagerView || isStylistView) && (
                 <div style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center gap-2 p-4 flex-wrap">
                   <button onClick={() => setSelectedDate((d) => { const dt = new Date(d + "T00:00:00"); dt.setDate(dt.getDate() - 1); return dt.toISOString().slice(0, 10); })} aria-label="Previous day" style={{ border: `1px solid ${colors.border}` }} className="icon-btn w-8 h-8 rounded-md flex items-center justify-center"><ChevronLeft size={14} style={{ color: colors.subtle }} /></button>
-                  <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-2 py-1.5 rounded-md" />
+                  <input type="date" aria-label="Appointment date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-2 py-1.5 rounded-md" />
                   <button onClick={() => setSelectedDate((d) => { const dt = new Date(d + "T00:00:00"); dt.setDate(dt.getDate() + 1); return dt.toISOString().slice(0, 10); })} aria-label="Next day" style={{ border: `1px solid ${colors.border}` }} className="icon-btn w-8 h-8 rounded-md flex items-center justify-center"><ChevronRight size={14} style={{ color: colors.subtle }} /></button>
                   <button onClick={() => setSelectedDate(todayStr(0))} style={{ color: colors.wine }} className="text-xs font-medium px-2">Today</button>
                 </div>
@@ -1289,7 +1314,7 @@ function Dashboard(props) {
               <div style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center justify-between p-5 flex-wrap gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   {isManagerView && (
-                    <select value={stylistFilter} onChange={(e) => setStylistFilter(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-3 py-2 rounded-lg">
+                    <select aria-label="Filter by stylist" value={stylistFilter} onChange={(e) => setStylistFilter(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-3 py-2 rounded-lg">
                       <option>All</option>
                       {stylists.map((s) => <option key={s.id}>{s.name}</option>)}
                     </select>
@@ -1611,6 +1636,7 @@ function Dashboard(props) {
                       <input
                         value={services[name].photoUrl || ""}
                         onChange={(e) => updateServicePhoto(name, e.target.value)}
+                        aria-label={`${name} photo URL`}
                         placeholder="Photo URL (optional)"
                         style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }}
                         className="px-2 py-1.5 rounded-md text-sm flex-1 min-w-[180px]"
@@ -1718,10 +1744,10 @@ function Dashboard(props) {
                         <span className="flex-1 min-w-[140px] text-sm font-medium truncate">{name}</span>
                         <div className="flex items-center gap-1">
                           <span style={{ color: colors.subtle }} className="text-xs">$</span>
-                          <input type="number" value={info.price} onChange={(e) => updateServicePrice(name, e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-16 px-2 py-1 rounded-md text-sm" />
+                          <input type="number" aria-label={`${name} price`} value={info.price} onChange={(e) => updateServicePrice(name, e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-16 px-2 py-1 rounded-md text-sm" />
                         </div>
                         <div className="flex items-center gap-1">
-                          <input type="number" value={info.duration} onChange={(e) => updateServiceDuration(name, e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-14 px-2 py-1 rounded-md text-sm" />
+                          <input type="number" aria-label={`${name} duration in minutes`} value={info.duration} onChange={(e) => updateServiceDuration(name, e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-14 px-2 py-1 rounded-md text-sm" />
                           <span style={{ color: colors.subtle }} className="text-xs">min</span>
                         </div>
                         <IconBtn onClick={() => deleteService(name)} title="Delete service" icon={X} color={colors.danger} />
@@ -1766,10 +1792,12 @@ function StatCard({ label, value, sub, trend }) {
 function Field({ label, children }) {
   const { colors } = useTheme();
   return (
-    <div className="flex flex-col gap-1">
-      <label style={{ color: colors.subtle }} className="text-xs">{label}</label>
+    // The <label> wraps the control, so the text is programmatically tied to the input
+    // (screen readers announce it, and clicking the text focuses the field).
+    <label className="flex flex-col gap-1">
+      <span style={{ color: colors.subtle }} className="text-xs">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 

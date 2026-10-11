@@ -57,6 +57,7 @@ class AppointmentController extends Controller
             ->contains(function ($existing) use ($start, $end) {
                 $existingStart = Carbon::parse($existing->scheduled_at);
                 $existingEnd = $existingStart->copy()->addMinutes($existing->service->duration_minutes ?? 45);
+
                 return $start->lt($existingEnd) && $existingStart->lt($end);
             });
     }
@@ -65,9 +66,18 @@ class AppointmentController extends Controller
     private function withinBusinessHours(Carbon $start, int $durationMinutes): bool
     {
         $settings = SalonSetting::current();
-        $open = Carbon::parse($start->toDateString() . ' ' . $settings->open_time);
-        $close = Carbon::parse($start->toDateString() . ' ' . $settings->close_time);
+        $open = Carbon::parse($start->toDateString().' '.$settings->open_time);
+        $close = Carbon::parse($start->toDateString().' '.$settings->close_time);
+
         return $start->gte($open) && $start->copy()->addMinutes($durationMinutes)->lte($close);
+    }
+
+    /** Bookings must not start in the past (15 minutes of grace covers walk-ins entered on arrival). */
+    private function assertNotInPast(Carbon $start): void
+    {
+        if ($start->lt(now()->subMinutes(15))) {
+            throw ValidationException::withMessages(['scheduled_at' => 'That time has already passed. Pick a future time.']);
+        }
     }
 
     public function store(Request $request)
@@ -85,6 +95,7 @@ class AppointmentController extends Controller
         $service = Service::findOrFail($data['service_id']);
         $start = Carbon::parse($data['scheduled_at']);
 
+        $this->assertNotInPast($start);
         if (! $this->withinBusinessHours($start, $service->duration_minutes)) {
             throw ValidationException::withMessages(['scheduled_at' => 'That time is outside the salon\'s open hours.']);
         }
@@ -132,7 +143,14 @@ class AppointmentController extends Controller
             'service_id' => ['sometimes', 'exists:services,id'],
         ]);
 
+        if ($user->isStylist() && isset($data['stylist_id']) && (int) $data['stylist_id'] !== (int) $appointment->stylist_id) {
+            abort(403, 'Only managers can reassign an appointment to another stylist.');
+        }
+
         if ($user->isClient()) {
+            if ($appointment->status !== 'confirmed') {
+                abort(403, 'Only upcoming (confirmed) appointments can be changed.');
+            }
             if (isset($data['status']) && $data['status'] !== 'cancelled') {
                 abort(403, 'Clients may only cancel appointments.');
             }
@@ -155,6 +173,9 @@ class AppointmentController extends Controller
             $newStart = Carbon::parse($data['scheduled_at'] ?? $appointment->scheduled_at);
             $duration = $newService->duration_minutes ?? 45;
 
+            if (isset($data['scheduled_at'])) {
+                $this->assertNotInPast($newStart);
+            }
             if (! $this->withinBusinessHours($newStart, $duration)) {
                 throw ValidationException::withMessages(['scheduled_at' => 'That time is outside the salon\'s open hours.']);
             }

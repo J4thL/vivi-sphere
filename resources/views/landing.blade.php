@@ -161,9 +161,9 @@
                             @include('partials.stars', ['rating' => $review->rating])
                             <blockquote class="my-4 flex-1 leading-relaxed">“{{ $review->comment }}”</blockquote>
                             <figcaption class="flex items-center gap-3 border-t border-line pt-4">
-                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-winesoft text-xs font-semibold text-wine">{{ mb_substr($review->client->name, 0, 1) }}</span>
+                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-winesoft text-xs font-semibold text-wine">{{ mb_substr($review->client->public_name, 0, 1) }}</span>
                                 <span class="text-sm">
-                                    <span class="block font-medium">{{ $review->client->name }}</span>
+                                    <span class="block font-medium">{{ $review->client->public_name }}</span>
                                     <span class="text-subtle">with {{ $review->stylist->name }}</span>
                                 </span>
                             </figcaption>

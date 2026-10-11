@@ -11,6 +11,7 @@ class AuditLogController extends Controller
     public function index(Request $request)
     {
         abort_unless($request->user()->isAdmin(), 403);
+
         return AuditLog::with('user')->latest()->limit(200)->get();
     }
 }

@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script>
+    <script nonce="{{ Vite::cspNonce() }}">
         // Points the dashboard's fetch calls at this same Laravel app's API.
         window.API_BASE = "{{ url('/api') }}";
     </script>

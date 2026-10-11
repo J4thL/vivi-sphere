@@ -54,6 +54,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Email already verified.']);
         }
         $request->user()->sendEmailVerificationNotification();
+
         return response()->json(['message' => 'Verification email sent.']);
     }
 

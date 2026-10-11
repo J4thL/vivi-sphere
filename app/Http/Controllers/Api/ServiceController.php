@@ -36,7 +36,7 @@ class ServiceController extends Controller
         abort_unless($request->user()->isAdmin(), 403);
 
         $data = $request->validate([
-            'name' => ['sometimes', 'string', 'max:255', 'unique:services,name,' . $service->id],
+            'name' => ['sometimes', 'string', 'max:255', 'unique:services,name,'.$service->id],
             'price' => ['sometimes', 'numeric', 'min:0'],
             'duration_minutes' => ['sometimes', 'integer', 'min:5'],
             'photo_url' => ['sometimes', 'nullable', 'url'],

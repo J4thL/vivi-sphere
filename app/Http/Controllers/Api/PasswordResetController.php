@@ -35,6 +35,8 @@ class PasswordResetController extends Controller
 
         $status = Password::reset($data, function ($user, $password) {
             $user->forceFill(['password' => Hash::make($password)])->save();
+            // A reset means the old password may be compromised: sign out every device.
+            $user->tokens()->delete();
         });
 
         if ($status !== Password::PASSWORD_RESET) {

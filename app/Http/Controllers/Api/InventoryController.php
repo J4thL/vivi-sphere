@@ -12,6 +12,7 @@ class InventoryController extends Controller
     public function index(Request $request)
     {
         abort_unless($request->user()->isManager(), 403);
+
         return InventoryItem::orderBy('name')->get();
     }
 

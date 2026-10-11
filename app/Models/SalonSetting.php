@@ -26,7 +26,7 @@ class SalonSetting extends Model
     {
         $settings = static::firstOrCreate([], [
             'hero_headline' => 'A salon that plans your whole visit, not just your appointment',
-            'hero_sub' => "Book with your favorite stylist, track your visit history, and see exactly what your next appointment will cost.",
+            'hero_sub' => 'Book with your favorite stylist, track your visit history, and see exactly what your next appointment will cost.',
             'featured_services' => [],
             'testimonials' => [],
             'faqs' => [],

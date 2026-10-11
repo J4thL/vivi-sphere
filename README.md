@@ -26,4 +26,11 @@ php artisan config:cache route:cache view:cache
 php artisan storage:link
 ```
 
+### Security notes
+
+- Responses carry security headers and a Content-Security-Policy (`app/Http/Middleware/SecurityHeaders.php`).
+  If you add third-party scripts (analytics, chat widgets), allow their origins there.
+- Behind a load balancer or proxy, configure trusted proxies so HTTPS is detected and HSTS is sent.
+- API tokens expire after 7 days (`SANCTUM_EXPIRATION`), and a password reset signs out every device.
+
 Do not run `DatabaseSeeder` or `SalonDemoSeeder` in production.

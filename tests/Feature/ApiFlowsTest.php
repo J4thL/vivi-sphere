@@ -26,17 +26,17 @@ class ApiFlowsTest extends TestCase
 
     private function service(array $o = []): Service
     {
-        return Service::create($o + ['name' => 'Cut ' . uniqid(), 'price' => 50, 'duration_minutes' => 45]);
+        return Service::create($o + ['name' => 'Cut '.uniqid(), 'price' => 50, 'duration_minutes' => 45]);
     }
 
     private function stylist(bool $active = true): Stylist
     {
-        return Stylist::create(['name' => 'S ' . uniqid(), 'role' => 'Stylist', 'active' => $active]);
+        return Stylist::create(['name' => 'S '.uniqid(), 'role' => 'Stylist', 'active' => $active]);
     }
 
     private function nextWeekdayAt(string $time): string
     {
-        return now()->addDays(3)->format('Y-m-d') . ' ' . $time;
+        return now()->addDays(3)->format('Y-m-d').' '.$time;
     }
 
     // ---- Public pages -----------------------------------------------------
@@ -98,7 +98,7 @@ class ApiFlowsTest extends TestCase
 
         $bad = URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => 'wrong']);
         $this->get($bad)->assertForbidden();
-        $this->get("/email/verify/{$user->id}/" . sha1($user->email))->assertForbidden(); // unsigned
+        $this->get("/email/verify/{$user->id}/".sha1($user->email))->assertForbidden(); // unsigned
     }
 
     // ---- Appointments -------------------------------------------------------

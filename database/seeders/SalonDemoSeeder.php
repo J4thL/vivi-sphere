@@ -33,6 +33,7 @@ class SalonDemoSeeder extends Seeder
         ];
         $stylists = collect($stylistData)->mapWithKeys(function ($s) {
             $stylist = Stylist::create(['name' => $s['name'], 'role' => $s['role'], 'active' => true]);
+
             return [$s['name'] => $stylist];
         });
 

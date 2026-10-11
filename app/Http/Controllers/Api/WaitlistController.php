@@ -12,6 +12,7 @@ class WaitlistController extends Controller
     public function index(Request $request)
     {
         abort_unless($request->user()->isManager(), 403);
+
         return WaitlistEntry::with(['service', 'stylist'])->where('status', 'waiting')->orderBy('preferred_date')->get();
     }
 
@@ -46,6 +47,7 @@ class WaitlistController extends Controller
     {
         abort_unless($request->user()->isManager(), 403);
         $waitlistEntry->update(['status' => 'cancelled']);
+
         return response()->json(['message' => 'Removed from waitlist.']);
     }
 }

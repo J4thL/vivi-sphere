@@ -19,6 +19,17 @@ class Client extends Model
         ];
     }
 
+    /** Privacy-safe label for public display: "Elena Marsh" -> "Elena M." */
+    public function getPublicNameAttribute(): string
+    {
+        $parts = preg_split('/\s+/', trim((string) $this->name), -1, PREG_SPLIT_NO_EMPTY);
+        if (count($parts) < 2) {
+            return $parts[0] ?? 'Client';
+        }
+
+        return $parts[0].' '.mb_strtoupper(mb_substr(end($parts), 0, 1)).'.';
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -12,10 +12,39 @@ class ReviewController extends Controller
     /** Public: approved reviews only, for the landing page. */
     public function index(Request $request)
     {
-        if ($request->user('sanctum')?->isManager()) {
+        $user = $request->user('sanctum');
+
+        if ($user?->isManager()) {
             return Review::with(['client', 'stylist'])->latest()->get();
         }
-        return Review::with(['client', 'stylist'])->where('status', 'approved')->latest()->get();
+
+        // Everyone else gets a minimal, privacy-safe shape: never the client's
+        // phone, spend, visit count or user id. A logged-in client also gets the
+        // appointment_id of their OWN reviews so the dashboard can hide
+        // "review this visit" prompts for visits they already reviewed.
+        $ownClientId = $user?->isClient() ? $user->client?->id : null;
+
+        return Review::with(['client:id,name', 'stylist:id,name'])
+            ->where('status', 'approved')
+            ->latest()
+            ->get()
+            ->map(function (Review $review) use ($ownClientId) {
+                $row = [
+                    'id' => $review->id,
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'status' => $review->status,
+                    'created_at' => $review->created_at,
+                    'client' => ['name' => $review->client->public_name],
+                    'stylist' => ['id' => $review->stylist->id, 'name' => $review->stylist->name],
+                ];
+                if ($ownClientId !== null && $review->client_id === $ownClientId) {
+                    $row['appointment_id'] = $review->appointment_id;
+                }
+
+                return $row;
+            })
+            ->values();
     }
 
     public function store(Request $request)

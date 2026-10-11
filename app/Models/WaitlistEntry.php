@@ -13,7 +13,18 @@ class WaitlistEntry extends Model
         return ['preferred_date' => 'date'];
     }
 
-    public function client() { return $this->belongsTo(Client::class); }
-    public function service() { return $this->belongsTo(Service::class); }
-    public function stylist() { return $this->belongsTo(Stylist::class); }
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
+    }
+
+    public function stylist()
+    {
+        return $this->belongsTo(Stylist::class);
+    }
 }
