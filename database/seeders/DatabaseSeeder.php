@@ -15,7 +15,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // This creates a login with a publicly known password ("password"). Never on a live site.
+        if (app()->environment('production')) {
+            throw new \RuntimeException('DatabaseSeeder creates a test account with a known password and must not run in production.');
+        }
 
         User::factory()->create([
             'name' => 'Test User',

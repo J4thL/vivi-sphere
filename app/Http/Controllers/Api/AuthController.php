@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -26,17 +27,23 @@ class AuthController extends Controller
             'password' => ['required', Password::min(8)],
         ])->validate();
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-            'role' => 'client',
-        ]);
+        // The account and its client record go in together; a half-registered user (a login with no
+        // client record) would otherwise be stuck unable to book.
+        $user = DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'role' => 'client',
+            ]);
 
-        Client::create([
-            'user_id' => $user->id,
-            'name' => $user->name,
-        ]);
+            Client::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+            ]);
+
+            return $user;
+        });
 
         // Fires Laravel's built-in "verify your email" notification, if a
         // mail driver is configured. Without one this is a no-op, so

@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Stylist;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -29,26 +30,33 @@ class StylistController extends Controller
             'bio' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $stylist = Stylist::create([
-            'name' => $data['name'],
-            'role' => $data['role'],
-            'photo_url' => $data['photo_url'] ?? null,
-            'bio' => $data['bio'] ?? null,
-            'active' => true,
-        ]);
-        AuditLog::record($request->user(), 'stylist.created', $stylist);
-
-        if (! empty($data['email'])) {
-            $tempPassword = Str::random(10);
-            User::create([
+        // The stylist, their login and the audit entry are saved together: if the login can't be
+        // created, there must not be a half-set-up stylist left behind.
+        $stylist = DB::transaction(function () use ($request, $data) {
+            $stylist = Stylist::create([
                 'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => Hash::make($tempPassword),
-                'role' => 'stylist',
-                'stylist_id' => $stylist->id,
+                'role' => $data['role'],
+                'photo_url' => $data['photo_url'] ?? null,
+                'bio' => $data['bio'] ?? null,
+                'active' => true,
             ]);
-            $stylist->temp_password = $tempPassword;
-        }
+
+            if (! empty($data['email'])) {
+                $tempPassword = Str::random(10);
+                User::create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'password' => Hash::make($tempPassword),
+                    'role' => 'stylist',
+                    'stylist_id' => $stylist->id,
+                ]);
+                $stylist->temp_password = $tempPassword;
+            }
+
+            AuditLog::record($request->user(), 'stylist.created', $stylist);
+
+            return $stylist;
+        });
 
         return response()->json($stylist, 201);
     }
