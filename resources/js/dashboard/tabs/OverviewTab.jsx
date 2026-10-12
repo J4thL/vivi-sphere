@@ -66,7 +66,7 @@ export default function OverviewTab({ ctx }) {
 
         {isManagerView && (
           <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-            <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Stylist leaderboard</div>
+            <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Stylist leaderboard <span style={{ color: colors.subtle }} className="text-xs font-sans">· last 6 months</span></div>
             <div className="flex flex-col gap-4">
               {leaderboard.map((s, i) => (
                 <div key={s.name}>

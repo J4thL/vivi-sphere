@@ -19,6 +19,6 @@ class ClientController extends Controller
 
         abort_unless($user->isManager(), 403);
 
-        return Client::orderByDesc('spend')->get();
+        return Client::orderByDesc('spend')->limit(config('salon.clients_max'))->get();
     }
 }

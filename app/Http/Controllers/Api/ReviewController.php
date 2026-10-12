@@ -15,7 +15,7 @@ class ReviewController extends Controller
         $user = $request->user('sanctum');
 
         if ($user?->isManager()) {
-            return Review::with(['client', 'stylist'])->latest()->get();
+            return Review::with(['client', 'stylist'])->latest()->limit(config('salon.reviews_max'))->get();
         }
 
         // Everyone else gets a minimal, privacy-safe shape: never the client's
@@ -27,6 +27,7 @@ class ReviewController extends Controller
         return Review::with(['client:id,name', 'stylist:id,name'])
             ->where('status', 'approved')
             ->latest()
+            ->limit(config('salon.public_reviews_max'))
             ->get()
             ->map(function (Review $review) use ($ownClientId) {
                 $row = [

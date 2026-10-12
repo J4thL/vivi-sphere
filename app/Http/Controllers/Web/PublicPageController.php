@@ -31,7 +31,7 @@ class PublicPageController extends Controller
         return view('stylist-profile', [
             'salonSettings' => SalonSetting::current(),
             'stylist' => $stylist,
-            'reviews' => Review::where('stylist_id', $stylist->id)->where('status', 'approved')->latest()->get(),
+            'reviews' => Review::where('stylist_id', $stylist->id)->where('status', 'approved')->latest()->take(config('salon.public_reviews_max'))->get(),
         ]);
     }
 

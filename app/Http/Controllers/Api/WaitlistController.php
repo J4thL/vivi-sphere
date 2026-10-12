@@ -13,7 +13,7 @@ class WaitlistController extends Controller
     {
         abort_unless($request->user()->isManager(), 403);
 
-        return WaitlistEntry::with(['service', 'stylist'])->where('status', 'waiting')->orderBy('preferred_date')->get();
+        return WaitlistEntry::with(['service', 'stylist'])->where('status', 'waiting')->orderBy('preferred_date')->limit(config('salon.waitlist_max'))->get();
     }
 
     public function store(Request $request)

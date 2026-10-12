@@ -53,6 +53,7 @@ php artisan storage:link
   If you add third-party scripts (analytics, chat widgets), allow their origins there.
 - Behind a load balancer or proxy, configure trusted proxies so HTTPS is detected and HSTS is sent.
 - Appointment times are the salon's local time, set by `SALON_TIMEZONE` (default `Asia/Manila`, which covers Davao). Leave `APP_TIMEZONE` at UTC.
+- List sizes are bounded (`config/salon.php`, env `SALON_*`): staff appointment lists start 180 days back unless `?date`/`?from` is given (the dashboard's leaderboard says "last 6 months" to match), and clients, reviews and the waitlist have caps.
 - API tokens expire after 7 days (`SANCTUM_EXPIRATION`), and a password reset signs out every device.
   When a token expires the dashboard returns to the login screen and says so.
 

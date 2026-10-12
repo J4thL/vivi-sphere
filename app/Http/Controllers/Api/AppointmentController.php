@@ -52,6 +52,12 @@ class AppointmentController extends Controller
             'to' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
+        // Staff lists with no range start a limited time back (see config/salon.php) so the payload
+        // doesn't grow forever. An explicit ?date or ?from always wins. A client only has their own few.
+        if (! $user->isClient() && ! $request->filled('date') && ! $request->filled('from')) {
+            $query->where('scheduled_at', '>=', Carbon::parse(now(config('app.salon_timezone'))->toDateString())->subDays(config('salon.appointments_window_days')));
+        }
+
         // Range comparisons (not whereDate()) so the scheduled_at index can be used.
         if ($request->filled('date')) {
             $day = Carbon::parse($request->query('date'));
