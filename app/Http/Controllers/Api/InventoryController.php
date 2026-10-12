@@ -23,9 +23,9 @@ class InventoryController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
-            'qty' => ['required', 'integer', 'min:0'],
-            'reorder_level' => ['required', 'integer', 'min:0'],
-            'unit_cost' => ['required', 'numeric', 'min:0'],
+            'qty' => ['required', 'integer', 'min:0', 'max:1000000'],
+            'reorder_level' => ['required', 'integer', 'min:0', 'max:1000000'],
+            'unit_cost' => ['required', 'numeric', 'min:0', 'max:999999.99'],
         ]);
 
         $item = InventoryItem::create($data);
@@ -39,9 +39,9 @@ class InventoryController extends Controller
         abort_unless($request->user()->isManager(), 403);
 
         $data = $request->validate([
-            'qty' => ['sometimes', 'integer', 'min:0'],
-            'reorder_level' => ['sometimes', 'integer', 'min:0'],
-            'unit_cost' => ['sometimes', 'numeric', 'min:0'],
+            'qty' => ['sometimes', 'integer', 'min:0', 'max:1000000'],
+            'reorder_level' => ['sometimes', 'integer', 'min:0', 'max:1000000'],
+            'unit_cost' => ['sometimes', 'numeric', 'min:0', 'max:999999.99'],
         ]);
 
         $inventoryItem->update($data);

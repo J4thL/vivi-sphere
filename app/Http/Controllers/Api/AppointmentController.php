@@ -131,7 +131,7 @@ class AppointmentController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'client_name' => ['required_without:client_id', 'string'],
+            'client_name' => ['required_without:client_id', 'string', 'max:255'],
             'client_id' => ['nullable', 'exists:clients,id'],
             'new_client' => ['sometimes', 'boolean'],
             'stylist_id' => ['required', Rule::exists('stylists', 'id')->where('active', true)],
@@ -240,7 +240,7 @@ class AppointmentController extends Controller
             if (isset($data['status']) && $data['status'] !== 'cancelled') {
                 abort(403, 'Clients may only cancel appointments.');
             }
-            if (isset($data['stylist_id']) && $data['stylist_id'] !== $appointment->stylist_id) {
+            if (isset($data['stylist_id']) && (int) $data['stylist_id'] !== (int) $appointment->stylist_id) {
                 abort(403, 'Clients cannot reassign their stylist.');
             }
         }
