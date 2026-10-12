@@ -28,17 +28,17 @@ Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/stylists', [StylistController::class, 'index']);
 Route::get('/reviews', [ReviewController::class, 'index']);
 
-Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:6,1');
-Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
-Route::post('/auth/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:6,1');
-Route::post('/auth/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:6,1');
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/auth/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:password-reset');
+Route::post('/auth/reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:password-reset');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']);
 
-    Route::middleware('throttle:30,1')->group(function () {
+    Route::middleware('throttle:bookings')->group(function () {
         Route::get('/appointments', [AppointmentController::class, 'index']);
         Route::post('/appointments', [AppointmentController::class, 'store']);
         Route::patch('/appointments/{appointment}', [AppointmentController::class, 'update']);
