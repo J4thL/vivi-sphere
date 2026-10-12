@@ -295,8 +295,8 @@ export default function Dashboard(props) {
     ? scopedAppointments.filter((a) => a.date >= todayStr(0))
     : scopedAppointments.filter((a) => a.date === todayStr(0));
 
-  const todaysRevenue = useMemo(() => scopedAppointments.filter((a) => a.date === todayStr(0) && a.status === "completed").reduce((sum, a) => sum + priceOf(a.service), 0), [scopedAppointments, priceOf]);
-  const yesterdaysRevenue = useMemo(() => scopedAppointments.filter((a) => a.date === todayStr(-1) && a.status === "completed").reduce((sum, a) => sum + priceOf(a.service), 0), [scopedAppointments, priceOf]);
+  const todaysRevenue = useMemo(() => scopedAppointments.filter((a) => a.date === todayStr(0) && a.status === "completed").reduce((sum, a) => sum + (a.price ?? priceOf(a.service)), 0), [scopedAppointments, priceOf]);
+  const yesterdaysRevenue = useMemo(() => scopedAppointments.filter((a) => a.date === todayStr(-1) && a.status === "completed").reduce((sum, a) => sum + (a.price ?? priceOf(a.service)), 0), [scopedAppointments, priceOf]);
   const revenueTrend = yesterdaysRevenue > 0 ? Math.round(((todaysRevenue - yesterdaysRevenue) / yesterdaysRevenue) * 100) : null;
 
   const activeCount = dayAppointments.filter((a) => a.status !== "cancelled").length;
@@ -317,7 +317,7 @@ export default function Dashboard(props) {
   const leaderboard = useMemo(() => {
     const totals = {};
     stylists.forEach((s) => (totals[s.name] = 0));
-    appointments.filter((a) => a.status === "completed" || a.status === "in-progress").forEach((a) => { totals[a.stylist] = (totals[a.stylist] || 0) + priceOf(a.service); });
+    appointments.filter((a) => a.status === "completed" || a.status === "in-progress").forEach((a) => { totals[a.stylist] = (totals[a.stylist] || 0) + (a.price ?? priceOf(a.service)); });
     const max = Math.max(1, ...Object.values(totals));
     return stylists.map((s) => ({ ...s, total: totals[s.name] || 0, pct: (totals[s.name] || 0) / max })).sort((a, b) => b.total - a.total);
   }, [appointments, stylists, priceOf]);
@@ -332,7 +332,7 @@ export default function Dashboard(props) {
   const revenueByService = useMemo(() => {
     const totals = {};
     Object.keys(services).forEach((s) => (totals[s] = 0));
-    reportAppointments.filter((a) => a.status === "completed").forEach((a) => { totals[a.service] = (totals[a.service] || 0) + priceOf(a.service); });
+    reportAppointments.filter((a) => a.status === "completed").forEach((a) => { totals[a.service] = (totals[a.service] || 0) + (a.price ?? priceOf(a.service)); });
     return Object.entries(totals).map(([service, revenue]) => ({ service, revenue: Math.round(revenue) }));
   }, [reportAppointments, services, priceOf]);
 
@@ -346,7 +346,7 @@ export default function Dashboard(props) {
   const myClientRecord = isClientView ? clients.find((c) => c.name === user.name) : null;
   const reviewableAppointments = isClientView ? scopedAppointments.filter((a) => a.status === "completed" && !reviews.some((r) => r.appointmentId === a.id)) : [];
 
-  const totalReportRevenue = Math.round(reportAppointments.filter((a) => a.status === "completed").reduce((s, a) => s + priceOf(a.service), 0));
+  const totalReportRevenue = Math.round(reportAppointments.filter((a) => a.status === "completed").reduce((s, a) => s + (a.price ?? priceOf(a.service)), 0));
   const completedInRange = reportAppointments.filter((a) => a.status === "completed").length;
   const cancelledInRange = reportAppointments.filter((a) => a.status === "cancelled").length;
   const cancellationRate = reportAppointments.length > 0 ? Math.round((cancelledInRange / reportAppointments.length) * 100) : 0;

@@ -64,7 +64,7 @@ export function computeWeeklyRevenue(appointments, services) {
     const label = new Date(dateStr + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" });
     const revenue = appointments
       .filter((a) => a.date === dateStr && a.status === "completed")
-      .reduce((sum, a) => sum + (services[a.service]?.price || 0), 0);
+      .reduce((sum, a) => sum + (a.price ?? services[a.service]?.price ?? 0), 0);
     return { day: label, revenue };
   });
 }
@@ -131,6 +131,8 @@ export function normalizeAppointment(a) {
     service: a.service?.name ?? a.service,
     stylist: a.stylist?.name ?? a.stylist,
     status: a.status,
+    // The price agreed when it was booked; reports must not follow later changes to the menu price.
+    price: a.price != null ? Number(a.price) : null,
   };
 }
 
