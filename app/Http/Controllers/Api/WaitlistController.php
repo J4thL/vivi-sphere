@@ -21,7 +21,7 @@ class WaitlistController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'client_name' => ['required_without:client_id', 'string'],
+            'client_name' => ['required_without:client_id', 'string', 'max:255'],
             'client_id' => ['nullable', 'exists:clients,id'],
             'service_id' => ['required', 'exists:services,id'],
             'stylist_id' => ['nullable', 'exists:stylists,id'],

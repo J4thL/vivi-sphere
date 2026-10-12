@@ -20,9 +20,9 @@ class ServiceController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:services,name'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'duration_minutes' => ['required', 'integer', 'min:5'],
-            'photo_url' => ['nullable', 'url'],
+            'price' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+            'duration_minutes' => ['required', 'integer', 'min:5', 'max:1440'],
+            'photo_url' => ['nullable', 'url:http,https', 'max:255'],
         ]);
 
         $service = Service::create($data);
@@ -37,9 +37,9 @@ class ServiceController extends Controller
 
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255', 'unique:services,name,'.$service->id],
-            'price' => ['sometimes', 'numeric', 'min:0'],
-            'duration_minutes' => ['sometimes', 'integer', 'min:5'],
-            'photo_url' => ['sometimes', 'nullable', 'url'],
+            'price' => ['sometimes', 'numeric', 'min:0', 'max:999999.99'],
+            'duration_minutes' => ['sometimes', 'integer', 'min:5', 'max:1440'],
+            'photo_url' => ['sometimes', 'nullable', 'url:http,https', 'max:255'],
         ]);
 
         $old = $service->price;

@@ -26,7 +26,7 @@ class StylistController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'role' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'unique:users,email'],
-            'photo_url' => ['nullable', 'url'],
+            'photo_url' => ['nullable', 'url:http,https', 'max:255'],
             'bio' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -69,7 +69,7 @@ class StylistController extends Controller
             'active' => ['sometimes', 'boolean'],
             'name' => ['sometimes', 'string', 'max:255'],
             'role' => ['sometimes', 'string', 'max:255'],
-            'photo_url' => ['sometimes', 'nullable', 'url'],
+            'photo_url' => ['sometimes', 'nullable', 'url:http,https', 'max:255'],
             'bio' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ]);
 
