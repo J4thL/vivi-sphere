@@ -82,7 +82,7 @@ export default function AppointmentsTab({ ctx }) {
               <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">{initials(isClientView ? a.service : a.client)}</div>
               <div className="min-w-0">
                 <div className="font-medium truncate">{isClientView ? a.service : a.client}</div>
-                <div style={{ color: colors.subtle }} className="text-xs truncate">{isClientView ? `with ${a.stylist}` : `${a.service} · ${a.stylist}`} · ${(a.price ?? priceOf(a.service))} · {durationOf(a.service)}m</div>
+                <div style={{ color: colors.subtle }} className="text-xs truncate">{isClientView ? `with ${a.stylist}` : `${a.service} · ${a.stylist}`} · ${(a.price ?? priceOf(a.service))} · {(a.duration ?? durationOf(a.service))}m</div>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">

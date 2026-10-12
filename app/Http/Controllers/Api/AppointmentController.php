@@ -90,7 +90,7 @@ class AppointmentController extends Controller
             ->get()
             ->contains(function ($existing) use ($start, $end) {
                 $existingStart = Carbon::parse($existing->scheduled_at);
-                $existingEnd = $existingStart->copy()->addMinutes($existing->service->duration_minutes ?? 45);
+                $existingEnd = $existingStart->copy()->addMinutes($existing->minutes());
 
                 return $start->lt($existingEnd) && $existingStart->lt($end);
             });
@@ -163,6 +163,7 @@ class AppointmentController extends Controller
                 'client_id' => $client->id,
                 'stylist_id' => $data['stylist_id'],
                 'service_id' => $service->id,
+                'duration_minutes' => $service->duration_minutes,
                 'scheduled_at' => $data['scheduled_at'],
                 'status' => 'confirmed',
                 'price' => $service->price,
@@ -242,6 +243,7 @@ class AppointmentController extends Controller
         $newService = isset($data['service_id']) ? Service::findOrFail($data['service_id']) : $appointment->service;
         if (isset($data['service_id']) && (int) $data['service_id'] !== (int) $appointment->service_id) {
             $data['price'] = $newService->price; // a different service re-prices; the same one keeps the booked price
+            $data['duration_minutes'] = $newService->duration_minutes; // ...and takes that service's length
         }
 
         // Only an actual change counts: a client that echoes back the current stylist, service or
@@ -253,7 +255,7 @@ class AppointmentController extends Controller
         // Everything below is one all-or-nothing unit, and starts by re-reading the appointment
         // under a lock: two simultaneous requests can't both act on the same stale status (for
         // example both completing it and counting the visit twice).
-        $appointment = DB::transaction(function () use ($user, $appointment, $data, $newService, $movingTime) {
+        $appointment = DB::transaction(function () use ($user, $appointment, $data, $movingTime) {
             $appointment = Appointment::with('client')->lockForUpdate()->findOrFail($appointment->id);
             $previousStatus = $appointment->status;
             $newStatus = $data['status'] ?? $previousStatus;
@@ -271,7 +273,8 @@ class AppointmentController extends Controller
             if ($movingTime || $reopening) {
                 $newStylistId = $data['stylist_id'] ?? $appointment->stylist_id;
                 $newStart = Carbon::parse($data['scheduled_at'] ?? $appointment->scheduled_at);
-                $duration = $newService->duration_minutes ?? 45;
+                // A different service brings its own length; otherwise keep the length booked.
+                $duration = isset($data['duration_minutes']) ? (int) $data['duration_minutes'] : $appointment->minutes();
 
                 if (isset($data['scheduled_at'])) {
                     $this->assertNotInPast($newStart);

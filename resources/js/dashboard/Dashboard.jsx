@@ -66,7 +66,7 @@ export default function Dashboard(props) {
   const visibleNav = NAV_ITEMS.filter((n) => n.roles.includes(role));
 
   const isSlotConflict = (stylistName, date, time, service, excludeId) =>
-    appointments.some((a) => a.id !== excludeId && a.stylist === stylistName && a.date === date && a.status !== "cancelled" && rangesOverlap(a.time, durationOf(a.service), time, durationOf(service)));
+    appointments.some((a) => a.id !== excludeId && a.stylist === stylistName && a.date === date && a.status !== "cancelled" && rangesOverlap(a.time, a.duration ?? durationOf(a.service), time, durationOf(service)));
 
   const isWithinHours = (time, service) => {
     const start = timeToMinutes(time);

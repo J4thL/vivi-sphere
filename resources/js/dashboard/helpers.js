@@ -133,6 +133,8 @@ export function normalizeAppointment(a) {
     status: a.status,
     // The price agreed when it was booked; reports must not follow later changes to the menu price.
     price: a.price != null ? Number(a.price) : null,
+    // Length booked; older rows have none and use the service's current length.
+    duration: a.duration_minutes != null ? Number(a.duration_minutes) : null,
   };
 }
 
