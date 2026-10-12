@@ -52,7 +52,7 @@ class Tier2PerformanceTest extends TestCase
         Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
 
         DB::enableQueryLog();
-        $body = fn ($t) => ['client_name' => 'Walk In', 'stylist_id' => $stylist->id, 'service_id' => $service->id, 'scheduled_at' => $t];
+        $body = fn ($t) => ['client_name' => 'Walk In', 'new_client' => true, 'stylist_id' => $stylist->id, 'service_id' => $service->id, 'scheduled_at' => $t];
 
         $this->postJson('/api/appointments', $body('2026-10-15 10:30:00'))->assertStatus(422)->assertJsonValidationErrors('scheduled_at');
         $this->postJson('/api/appointments', $body('2026-10-15 11:00:00'))->assertCreated(); // back to back is fine

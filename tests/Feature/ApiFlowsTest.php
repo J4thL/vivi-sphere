@@ -118,7 +118,7 @@ class ApiFlowsTest extends TestCase
         Sanctum::actingAs($this->user('admin'));
         $stylist = $this->stylist();
         $service = $this->service(['duration_minutes' => 60]);
-        $body = fn ($t) => ['client_name' => 'Walk In', 'stylist_id' => $stylist->id, 'service_id' => $service->id, 'scheduled_at' => $this->nextWeekdayAt($t)];
+        $body = fn ($t) => ['client_name' => 'Walk In', 'new_client' => true, 'stylist_id' => $stylist->id, 'service_id' => $service->id, 'scheduled_at' => $this->nextWeekdayAt($t)];
 
         $this->postJson('/api/appointments', $body('10:00'))->assertCreated();
         $this->postJson('/api/appointments', $body('10:30'))->assertStatus(422)->assertJsonValidationErrors('scheduled_at');

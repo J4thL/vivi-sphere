@@ -42,7 +42,7 @@ export default function Dashboard(props) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState("");
-  const emptyForm = { client: isClientView ? user.name : "", service: Object.keys(services)[0], stylist: "No preference", date: todayStr(0), time: "12:00" };
+  const emptyForm = { client: isClientView ? user.name : "", clientId: null, newClient: false, service: Object.keys(services)[0], stylist: "No preference", date: todayStr(0), time: "12:00" };
   const [form, setForm] = useState(emptyForm);
   const [reviewDraft, setReviewDraft] = useState({});
 
@@ -121,11 +121,13 @@ export default function Dashboard(props) {
       const tempId = `temp-${Date.now()}`;
       const newAppt = { id: tempId, date: form.date, time: form.time, client: form.client, service: form.service, stylist: stylistName, status: "confirmed" };
       setAppointments((prev) => [...prev, newAppt].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)));
-      const result = await apiSend("/appointments", "POST", { client_name: form.client, stylist_id: stylists.find((s) => s.name === stylistName)?.id, service_id: services[form.service]?.id, scheduled_at: `${form.date} ${form.time}:00` }, token);
+      const result = await apiSend("/appointments", "POST", { client_name: form.client, ...(form.clientId ? { client_id: form.clientId } : {}), ...(form.newClient ? { new_client: true } : {}), stylist_id: stylists.find((s) => s.name === stylistName)?.id, service_id: services[form.service]?.id, scheduled_at: `${form.date} ${form.time}:00` }, token);
       if (result?.error) {
         // Roll the optimistic row back out - the server rejected it, so
         // leaving it on screen would show an appointment that isn't saved.
         setAppointments((prev) => prev.filter((a) => a.id !== tempId));
+        // Name already belongs to a client: keep the form open and let the user choose (see AppointmentsTab).
+        if (/already exists/i.test(result.message || "")) { setFormError(result.message); return; }
         notify(result.message, "error");
         return;
       }
@@ -138,7 +140,7 @@ export default function Dashboard(props) {
     resetForm();
   };
 
-  const startReschedule = (a) => { setEditingId(a.id); setForm({ client: a.client, service: a.service, stylist: a.stylist, date: a.date, time: a.time }); setFormError(""); setShowForm(true); };
+  const startReschedule = (a) => { setEditingId(a.id); setForm({ client: a.client, clientId: null, newClient: false, service: a.service, stylist: a.stylist, date: a.date, time: a.time }); setFormError(""); setShowForm(true); };
 
   const toggleStylistActive = (id) => {
     const target = stylists.find((s) => s.id === id);
@@ -358,7 +360,7 @@ export default function Dashboard(props) {
   const ctx = {
     activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
-    clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
+    clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,
     inventory, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
     landingContent, leaderboard, moderateReview, myClientRecord, newClientsToday, newFaq,
@@ -366,7 +368,7 @@ export default function Dashboard(props) {
     removeFaq, removeWaitlistEntry, reportRange, resetForm, revenueByService, revenueTrend,
     reviewDraft, reviewableAppointments, reviews, saveSalonInfo, saveSite, saveStylistEdit,
     savedMsg, scopedAppointments, selectedDate, services, setActiveTab, setClientSearch,
-    setEditingStylistId, setForm, setNewFaq, setNewItem, setNewService, setNewStylist,
+    setEditingStylistId, setForm, setFormError, setNewFaq, setNewItem, setNewService, setNewStylist,
     setReportRange, setReviewDraft, setSelectedDate, setShowForm, setSiteDraft, setStatusFilter,
     setStylistEditDraft, setStylistFilter, showForm, siteDraft, startEditStylist, startReschedule,
     statusBreakdown, statusFilter, stylistEditDraft, stylistFilter, stylists, submitAppointment,

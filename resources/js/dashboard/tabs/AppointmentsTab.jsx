@@ -5,7 +5,7 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function AppointmentsTab({ ctx }) {
   const { colors } = useTheme();
-  const { advanceStatus, cancelAppointment, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
+  const { advanceStatus, cancelAppointment, clients, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
   return (
     <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
       {(isManagerView || isStylistView) && (
@@ -40,8 +40,29 @@ export default function AppointmentsTab({ ctx }) {
           <div className="flex items-end gap-3 flex-wrap">
             {!isClientView && (
               <Field label="Client name">
-                <input value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} disabled={!!editingId} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-40" placeholder="Jane Avery" />
+                <input value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value, clientId: null, newClient: false })} disabled={!!editingId} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-40" placeholder="Jane Avery" />
               </Field>
+            )}
+            {!isClientView && !editingId && isManagerView && !form.clientId && form.client.trim().length >= 2 && (() => {
+              const q = form.client.trim().toLowerCase();
+              const matches = clients.filter((c) => c.id && c.name.toLowerCase().includes(q)).slice(0, 5);
+              return matches.length > 0 ? (
+                <div className="flex flex-col gap-1" aria-label="Matching clients">
+                  <span style={{ color: colors.subtle }} className="text-xs">Existing clients - pick one to book under their record</span>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {matches.map((c) => (
+                      <button key={c.id} type="button" onClick={() => setForm({ ...form, client: c.name, clientId: c.id, newClient: false })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-xs px-2 py-1 rounded-md">
+                        {c.name} · {c.visits} visit{c.visits === 1 ? "" : "s"}{c.phone && c.phone !== "-" ? ` · ${c.phone}` : ""}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+            {!isClientView && form.clientId && (
+              <div style={{ color: colors.wine }} className="text-xs flex items-center gap-2 pb-2">Booking under existing client <strong>{form.client}</strong>
+                <button type="button" onClick={() => setForm({ ...form, clientId: null })} style={{ color: colors.subtle }} className="underline">change</button>
+              </div>
             )}
             <Field label="Service">
               <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
@@ -66,6 +87,7 @@ export default function AppointmentsTab({ ctx }) {
           {formError && (
             <div className="flex items-center gap-3 flex-wrap">
               <span style={{ color: colors.danger }} className="text-xs">{formError}</span>
+              {formError.includes("already exists") && <button onClick={() => { setForm({ ...form, newClient: true }); setFormError(""); }} style={{ color: colors.wine }} className="text-xs font-medium underline">Book as a new client with this name</button>}
               {formError.includes("booked over this time") && <button onClick={joinWaitlist} style={{ color: colors.wine }} className="text-xs font-medium underline">Join waitlist instead</button>}
             </div>
           )}

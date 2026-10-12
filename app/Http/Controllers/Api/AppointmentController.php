@@ -127,6 +127,7 @@ class AppointmentController extends Controller
         $data = $request->validate([
             'client_name' => ['required_without:client_id', 'string'],
             'client_id' => ['nullable', 'exists:clients,id'],
+            'new_client' => ['sometimes', 'boolean'],
             'stylist_id' => ['required', Rule::exists('stylists', 'id')->where('active', true)],
             'service_id' => ['required', 'exists:services,id'],
             'scheduled_at' => ['required', 'date'],
@@ -134,6 +135,14 @@ class AppointmentController extends Controller
 
         $service = Service::findOrFail($data['service_id']);
         $start = Carbon::parse($data['scheduled_at']);
+
+        // Two different people can share a name, so a typed name alone must never be assumed to be
+        // an existing client (that silently merged their visit history and spend). Staff either pick
+        // the existing client (client_id) or say explicitly that this is a new person (new_client).
+        if (! $user->isClient() && empty($data['client_id']) && empty($data['new_client'])
+            && Client::where('name', $data['client_name'])->exists()) {
+            throw ValidationException::withMessages(['client_name' => "A client named \"{$data['client_name']}\" already exists. Choose them from the list, or book as a new client."]);
+        }
 
         $this->assertNotInPast($start);
         if (! $this->withinBusinessHours($start, $service->duration_minutes)) {
@@ -156,7 +165,7 @@ class AppointmentController extends Controller
             } else {
                 $client = isset($data['client_id'])
                     ? Client::findOrFail($data['client_id'])
-                    : Client::firstOrCreate(['name' => $data['client_name']]);
+                    : Client::create(['name' => $data['client_name']]);
             }
 
             $appointment = Appointment::create([

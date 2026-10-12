@@ -149,6 +149,7 @@ function relativeLastVisit(lastVisitAt) {
 
 export function normalizeClient(c) {
   return {
+    id: c.id,
     name: c.name,
     phone: c.phone || "-",
     visits: c.visits ?? 0,

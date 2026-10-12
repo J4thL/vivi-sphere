@@ -9,6 +9,7 @@ use App\Models\Stylist;
 use App\Models\User;
 use App\Models\WaitlistEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -109,5 +110,55 @@ class CoverageGapsTest extends TestCase
 
         $this->assertSame('cancelled', $entry->fresh()->status); // soft-removed, never deleted
         $this->assertSame([], $this->getJson('/api/waitlist')->assertOk()->json());
+    }
+
+    // ---- same-name clients --------------------------------------------------------------------
+
+    private function staffBook(array $who, string $time): TestResponse
+    {
+        return $this->postJson('/api/appointments', $who + [
+            'stylist_id' => $this->ana->id, 'service_id' => $this->service->id, 'scheduled_at' => "{$this->day} $time",
+        ]);
+    }
+
+    public function test_a_typed_name_that_already_exists_is_not_silently_merged(): void
+    {
+        $this->as('manager');
+        $existing = Client::create(['name' => 'Maria Santos', 'visits' => 7, 'spend' => 700]);
+
+        $this->staffBook(['client_name' => 'Maria Santos'], '10:00:00')->assertStatus(422)->assertJsonValidationErrors('client_name');
+        $this->assertSame(0, Appointment::count());
+        $this->assertSame(1, Client::where('name', 'Maria Santos')->count());
+        $this->assertSame(7, (int) $existing->fresh()->visits);
+    }
+
+    public function test_staff_can_pick_the_existing_client_by_id(): void
+    {
+        $this->as('manager');
+        $existing = Client::create(['name' => 'Maria Santos']);
+
+        $res = $this->staffBook(['client_id' => $existing->id, 'client_name' => 'Maria Santos'], '10:00:00')->assertCreated();
+
+        $this->assertSame($existing->id, $res->json('client_id'));
+        $this->assertSame(1, Client::where('name', 'Maria Santos')->count());
+    }
+
+    public function test_staff_can_explicitly_book_a_different_person_with_the_same_name(): void
+    {
+        $this->as('stylist', ['stylist_id' => $this->ana->id]);
+        $existing = Client::create(['name' => 'Maria Santos']);
+
+        $res = $this->staffBook(['client_name' => 'Maria Santos', 'new_client' => true], '10:00:00')->assertCreated();
+
+        $this->assertNotSame($existing->id, $res->json('client_id'));
+        $this->assertSame(2, Client::where('name', 'Maria Santos')->count());
+    }
+
+    public function test_a_brand_new_name_needs_no_extra_step(): void
+    {
+        $this->as('manager');
+
+        $this->staffBook(['client_name' => 'Totally New'], '10:00:00')->assertCreated();
+        $this->assertSame(1, Client::where('name', 'Totally New')->count());
     }
 }
