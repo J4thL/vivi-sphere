@@ -8,13 +8,26 @@ use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\SalonSetting;
 use App\Models\Service;
+use App\Models\Stylist;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends Controller
 {
+    /**
+     * Which status an appointment may move to from each status. "Completed" is final, so a
+     * visit can never be counted twice; only managers may reopen a cancelled appointment.
+     */
+    private const STATUS_TRANSITIONS = [
+        'confirmed' => ['in-progress', 'completed', 'cancelled'],
+        'in-progress' => ['confirmed', 'completed', 'cancelled'],
+        'completed' => [],
+        'cancelled' => ['confirmed'],
+    ];
+
     /**
      * Admins/managers see everything. Stylists see only their own
      * appointments. Clients see only their own bookings. Enforced here
@@ -63,6 +76,9 @@ class AppointmentController extends Controller
             ->whereBetween('scheduled_at', [$start->copy()->startOfDay(), $start->copy()->endOfDay()])
             ->where('status', '!=', 'cancelled')
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+            // A locking read always sees the latest committed rows. On MySQL (REPEATABLE READ) a plain
+            // read could use an older snapshot and miss a booking committed while we waited for the lock.
+            ->lockForUpdate()
             ->with('service')
             ->get()
             ->contains(function ($existing) use ($start, $end) {
@@ -116,30 +132,60 @@ class AppointmentController extends Controller
         if (! $this->withinBusinessHours($start, $service->duration_minutes)) {
             throw ValidationException::withMessages(['scheduled_at' => 'That time is outside the salon\'s open hours.']);
         }
-        if ($this->slotOverlaps((int) $data['stylist_id'], $start, $service->duration_minutes)) {
-            throw ValidationException::withMessages(['scheduled_at' => 'That stylist is already booked over this time. Pick another slot or join the waitlist.']);
-        }
 
-        if ($user->isClient()) {
-            $client = Client::firstOrCreate(['user_id' => $user->id], ['name' => $user->name]);
-        } else {
-            $client = isset($data['client_id'])
-                ? Client::findOrFail($data['client_id'])
-                : Client::firstOrCreate(['name' => $data['client_name']]);
-        }
+        // Check-then-insert must not interleave with another booking for the same stylist, or two
+        // simultaneous requests could both see a free slot. Locking the stylist's row makes the
+        // second request wait until the first has committed, then see its appointment. The client
+        // record, the appointment and the audit entry are saved together or not at all.
+        $appointment = DB::transaction(function () use ($user, $data, $service, $start) {
+            $this->lockStylist((int) $data['stylist_id']);
 
-        $appointment = Appointment::create([
-            'client_id' => $client->id,
-            'stylist_id' => $data['stylist_id'],
-            'service_id' => $service->id,
-            'scheduled_at' => $data['scheduled_at'],
-            'status' => 'confirmed',
-            'price' => $service->price,
-        ]);
+            if ($this->slotOverlaps((int) $data['stylist_id'], $start, $service->duration_minutes)) {
+                throw ValidationException::withMessages(['scheduled_at' => 'That stylist is already booked over this time. Pick another slot or join the waitlist.']);
+            }
 
-        AuditLog::record($user, 'appointment.booked', $appointment);
+            if ($user->isClient()) {
+                $client = Client::firstOrCreate(['user_id' => $user->id], ['name' => $user->name]);
+            } else {
+                $client = isset($data['client_id'])
+                    ? Client::findOrFail($data['client_id'])
+                    : Client::firstOrCreate(['name' => $data['client_name']]);
+            }
+
+            $appointment = Appointment::create([
+                'client_id' => $client->id,
+                'stylist_id' => $data['stylist_id'],
+                'service_id' => $service->id,
+                'scheduled_at' => $data['scheduled_at'],
+                'status' => 'confirmed',
+                'price' => $service->price,
+            ]);
+
+            AuditLog::record($user, 'appointment.booked', $appointment);
+
+            return $appointment;
+        });
 
         return response()->json($appointment->load(['client', 'stylist', 'service']), 201);
+    }
+
+    /** Takes a row lock on the stylist until the surrounding transaction ends (a no-op on SQLite, which locks the whole database). */
+    private function lockStylist(int $stylistId): void
+    {
+        Stylist::whereKey($stylistId)->lockForUpdate()->first();
+    }
+
+    private function assertStatusChangeAllowed($user, string $from, string $to): void
+    {
+        if ($from === $to) {
+            return; // repeating the current status is harmless and changes nothing
+        }
+        if (! in_array($to, self::STATUS_TRANSITIONS[$from] ?? [], true)) {
+            throw ValidationException::withMessages(['status' => "A {$from} appointment can't be changed to {$to}."]);
+        }
+        if ($from === 'cancelled' && ! $user->isManager()) {
+            abort(403, 'Only managers can reopen a cancelled appointment.');
+        }
     }
 
     public function update(Request $request, Appointment $appointment)
@@ -185,37 +231,60 @@ class AppointmentController extends Controller
         }
 
         $movingTime = isset($data['scheduled_at']) || isset($data['stylist_id']) || isset($data['service_id']);
-        if ($movingTime) {
-            $newStylistId = $data['stylist_id'] ?? $appointment->stylist_id;
-            $newStart = Carbon::parse($data['scheduled_at'] ?? $appointment->scheduled_at);
-            $duration = $newService->duration_minutes ?? 45;
 
-            if (isset($data['scheduled_at'])) {
-                $this->assertNotInPast($newStart);
+        // Everything below is one all-or-nothing unit, and starts by re-reading the appointment
+        // under a lock: two simultaneous requests can't both act on the same stale status (for
+        // example both completing it and counting the visit twice).
+        $appointment = DB::transaction(function () use ($user, $appointment, $data, $newService, $movingTime) {
+            $appointment = Appointment::with('client')->lockForUpdate()->findOrFail($appointment->id);
+            $previousStatus = $appointment->status;
+            $newStatus = $data['status'] ?? $previousStatus;
+
+            $this->assertStatusChangeAllowed($user, $previousStatus, $newStatus);
+
+            if ($movingTime && in_array($newStatus, ['completed', 'cancelled'], true)) {
+                throw ValidationException::withMessages(['scheduled_at' => 'A completed or cancelled appointment can\'t be rescheduled or changed.']);
             }
-            if (! $this->withinBusinessHours($newStart, $duration)) {
-                throw ValidationException::withMessages(['scheduled_at' => 'That time is outside the salon\'s open hours.']);
+
+            // Reopening a cancelled appointment puts it back on the stylist's calendar, so the
+            // slot must still be free, exactly as for a new booking.
+            $reopening = $previousStatus === 'cancelled' && $newStatus !== 'cancelled';
+
+            if ($movingTime || $reopening) {
+                $newStylistId = $data['stylist_id'] ?? $appointment->stylist_id;
+                $newStart = Carbon::parse($data['scheduled_at'] ?? $appointment->scheduled_at);
+                $duration = $newService->duration_minutes ?? 45;
+
+                if (isset($data['scheduled_at'])) {
+                    $this->assertNotInPast($newStart);
+                }
+                if ($movingTime && ! $this->withinBusinessHours($newStart, $duration)) {
+                    throw ValidationException::withMessages(['scheduled_at' => 'That time is outside the salon\'s open hours.']);
+                }
+
+                $this->lockStylist((int) $newStylistId);
+                if ($this->slotOverlaps((int) $newStylistId, $newStart, $duration, $appointment->id)) {
+                    throw ValidationException::withMessages(['scheduled_at' => 'That stylist is already booked over this time. Pick another slot or join the waitlist.']);
+                }
             }
-            if ($this->slotOverlaps((int) $newStylistId, $newStart, $duration, $appointment->id)) {
-                throw ValidationException::withMessages(['scheduled_at' => 'That stylist is already booked over this time. Pick another slot or join the waitlist.']);
+
+            $appointment->update($data);
+
+            if ($newStatus === 'completed' && $previousStatus !== 'completed') {
+                $client = $appointment->client;
+                $client->increment('visits');
+                $client->increment('spend', $appointment->price);
+                $client->update(['last_visit_at' => now()]);
             }
-        }
 
-        $previousStatus = $appointment->status;
-        $appointment->update($data);
+            if ($newStatus !== $previousStatus) {
+                AuditLog::record($user, "appointment.{$newStatus}", $appointment, ['from' => $previousStatus]);
+            } elseif ($movingTime) {
+                AuditLog::record($user, 'appointment.rescheduled', $appointment);
+            }
 
-        if (($data['status'] ?? null) === 'completed' && $previousStatus !== 'completed') {
-            $client = $appointment->client;
-            $client->increment('visits');
-            $client->increment('spend', $appointment->price);
-            $client->update(['last_visit_at' => now()]);
-        }
-
-        if (isset($data['status']) && $data['status'] !== $previousStatus) {
-            AuditLog::record($user, "appointment.{$data['status']}", $appointment, ['from' => $previousStatus]);
-        } elseif ($movingTime) {
-            AuditLog::record($user, 'appointment.rescheduled', $appointment);
-        }
+            return $appointment;
+        });
 
         return response()->json($appointment->fresh(['client', 'stylist', 'service']));
     }
