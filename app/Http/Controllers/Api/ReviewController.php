@@ -61,16 +61,19 @@ class ReviewController extends Controller
         $appointment = $user->client->appointments()->where('id', $data['appointment_id'])->firstOrFail();
         abort_unless($appointment->status === 'completed', 422, 'You can only review a completed appointment.');
 
-        $review = Review::updateOrCreate(
-            ['appointment_id' => $appointment->id],
-            [
-                'client_id' => $appointment->client_id,
-                'stylist_id' => $appointment->stylist_id,
-                'rating' => $data['rating'],
-                'comment' => $data['comment'] ?? null,
-                'status' => 'pending',
-            ]
-        );
+        // A review can be corrected only while it is still waiting for moderation. Re-submitting an
+        // approved one used to silently pull it off the website and overwrite the rating; a rejected
+        // one must not be resubmitted to dodge the manager's decision.
+        $review = Review::firstOrNew(['appointment_id' => $appointment->id]);
+        abort_if($review->exists && $review->status !== 'pending', 422, 'This review has already been moderated and can no longer be changed.');
+
+        $review->fill([
+            'client_id' => $appointment->client_id,
+            'stylist_id' => $appointment->stylist_id,
+            'rating' => $data['rating'],
+            'comment' => $data['comment'] ?? null,
+            'status' => 'pending',
+        ])->save();
 
         return response()->json($review, 201);
     }

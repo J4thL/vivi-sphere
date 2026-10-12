@@ -45,6 +45,13 @@ class AppointmentController extends Controller
             $query->whereHas('client', fn ($q) => $q->where('user_id', $user->id));
         }
 
+        // A malformed date used to reach Carbon::parse() and surface as a 500.
+        $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+
         // Range comparisons (not whereDate()) so the scheduled_at index can be used.
         if ($request->filled('date')) {
             $day = Carbon::parse($request->query('date'));
@@ -225,12 +232,23 @@ class AppointmentController extends Controller
         // Reschedule can also change the service, which changes duration and
         // price - keep both in sync with whatever service the appointment
         // ends up with.
-        $newService = isset($data['service_id']) ? Service::findOrFail($data['service_id']) : $appointment->service;
-        if (isset($data['service_id'])) {
-            $data['price'] = $newService->price;
+        // Only a move to a *different* stylist must be an active one: an appointment that already
+        // belongs to a since-deactivated stylist can still be completed or rescheduled with them.
+        if (isset($data['stylist_id']) && (int) $data['stylist_id'] !== (int) $appointment->stylist_id
+            && ! Stylist::whereKey($data['stylist_id'])->where('active', true)->exists()) {
+            throw ValidationException::withMessages(['stylist_id' => 'That stylist is not active, so appointments can\'t be assigned to them.']);
         }
 
-        $movingTime = isset($data['scheduled_at']) || isset($data['stylist_id']) || isset($data['service_id']);
+        $newService = isset($data['service_id']) ? Service::findOrFail($data['service_id']) : $appointment->service;
+        if (isset($data['service_id']) && (int) $data['service_id'] !== (int) $appointment->service_id) {
+            $data['price'] = $newService->price; // a different service re-prices; the same one keeps the booked price
+        }
+
+        // Only an actual change counts: a client that echoes back the current stylist, service or
+        // time along with a status change is not rescheduling anything.
+        $movingTime = (isset($data['scheduled_at']) && ! Carbon::parse($data['scheduled_at'])->equalTo(Carbon::parse($appointment->scheduled_at)))
+            || (isset($data['stylist_id']) && (int) $data['stylist_id'] !== (int) $appointment->stylist_id)
+            || (isset($data['service_id']) && (int) $data['service_id'] !== (int) $appointment->service_id);
 
         // Everything below is one all-or-nothing unit, and starts by re-reading the appointment
         // under a lock: two simultaneous requests can't both act on the same stale status (for

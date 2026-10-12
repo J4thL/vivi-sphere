@@ -25,8 +25,12 @@ class WaitlistController extends Controller
             'client_id' => ['nullable', 'exists:clients,id'],
             'service_id' => ['required', 'exists:services,id'],
             'stylist_id' => ['nullable', 'exists:stylists,id'],
-            'preferred_date' => ['required', 'date'],
+            // The salon's "today", not the server's UTC date.
+            'preferred_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:'.now(config('app.salon_timezone'))->toDateString()],
         ]);
+
+        // Linking an entry to an arbitrary client record is a manager action; stylists add by name.
+        abort_if(isset($data['client_id']) && ! $user->isClient() && ! $user->isManager(), 403, 'Only managers can pick an existing client.');
 
         if ($user->isClient()) {
             $client = Client::firstOrCreate(['user_id' => $user->id], ['name' => $user->name]);
