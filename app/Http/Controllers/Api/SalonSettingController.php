@@ -13,7 +13,9 @@ class SalonSettingController extends Controller
     /** Public: the landing page needs this before anyone logs in. */
     public function show()
     {
-        return SalonSetting::current();
+        // Wrapped in response()->json(): a bare model that was just created (first request after a
+        // fresh install) is answered by Laravel with 201 Created, which is wrong for a read.
+        return response()->json(SalonSetting::current());
     }
 
     public function update(Request $request)
