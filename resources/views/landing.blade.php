@@ -47,7 +47,7 @@
                     @foreach ($featuredServices->take(4) as $service)
                         <li class="flex items-center justify-between gap-4 py-3.5 text-sm">
                             <span class="font-medium">{{ $service->name }}</span>
-                            <span class="font-serif text-lg text-wine">${{ number_format($service->price, 0) }}</span>
+                            <span class="font-serif text-lg text-wine">₱{{ number_format($service->price, 0) }}</span>
                         </li>
                     @endforeach
                 </ul>
@@ -97,7 +97,7 @@
                         <div class="flex flex-1 flex-col gap-3 p-6">
                             <div class="flex items-start justify-between gap-4">
                                 <h3 class="text-xl font-medium leading-snug">{{ $service->name }}</h3>
-                                <div class="font-serif text-2xl text-wine">${{ number_format($service->price, 0) }}</div>
+                                <div class="font-serif text-2xl text-wine">₱{{ number_format($service->price, 0) }}</div>
                             </div>
                             <div class="mt-auto inline-flex items-center gap-1.5 text-sm text-subtle">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/></svg>

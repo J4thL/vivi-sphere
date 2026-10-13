@@ -1,5 +1,5 @@
 import { Search } from "lucide-react";
-import { initials } from "../helpers.js";
+import { formatMoney, initials } from "../helpers.js";
 import { useTheme } from "../theme.jsx";
 
 export default function ClientsTab({ ctx }) {
@@ -26,7 +26,7 @@ export default function ClientsTab({ ctx }) {
           </thead>
           <tbody>
             {filteredClients.map((c) => (
-              <tr key={c.name} style={{ borderBottom: `1px solid ${colors.border}` }}>
+              <tr key={c.id ?? c.name} style={{ borderBottom: `1px solid ${colors.border}` }}>
                 <td className="py-3 px-5">
                   <div className="flex items-center gap-2">
                     <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium">{initials(c.name)}</div>
@@ -37,7 +37,7 @@ export default function ClientsTab({ ctx }) {
                 <td className="py-3 px-5" style={{ color: colors.subtle }}>{c.phone}</td>
                 <td className="py-3 px-5">{c.visits}</td>
                 <td className="py-3 px-5" style={{ color: colors.subtle }}>{c.lastVisit}</td>
-                <td className="py-3 px-5 font-medium">${c.spend.toLocaleString()}</td>
+                <td className="py-3 px-5 font-medium">{formatMoney(c.spend)}</td>
               </tr>
             ))}
             {filteredClients.length === 0 && <tr><td colSpan={5} className="text-center py-8" style={{ color: colors.subtle }}>No clients found.</td></tr>}

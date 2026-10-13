@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Star } from "lucide-react";
-import { STATUS_META, statusColor } from "../helpers.js";
+import { STATUS_META, formatMoney, statusColor } from "../helpers.js";
 import { ChartPlaceholder, StatusPieChart, WeeklyRevenueChart } from "../lazyCharts.jsx";
 import { serifFont, useTheme } from "../theme.jsx";
 import { StatCard } from "../ui.jsx";
@@ -11,7 +11,7 @@ export default function OverviewTab({ ctx }) {
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label={isClientView ? "Total spent" : isStylistView ? "My revenue today" : "Today's revenue"} value={isClientView ? `$${(myClientRecord?.spend || 0).toLocaleString()}` : `$${todaysRevenue.toLocaleString()}`} sub={isClientView ? "lifetime with us" : "vs. yesterday"} trend={isClientView ? null : revenueTrend} />
+        <StatCard label={isClientView ? "Total spent" : isStylistView ? "My revenue today" : "Today's revenue"} value={isClientView ? formatMoney(myClientRecord?.spend || 0) : formatMoney(todaysRevenue)} sub={isClientView ? "lifetime with us" : "vs. yesterday"} trend={isClientView ? null : revenueTrend} />
         <StatCard label={isClientView ? "Visits" : isStylistView ? "My appointments" : "Appointments today"} value={isClientView ? (myClientRecord?.visits || 0) : activeCount} sub={isClientView ? "all time" : "vs. yesterday"} trend={isClientView ? null : countTrend} />
         {isClientView && <StatCard label="Upcoming" value={scopedAppointments.filter((a) => a.status === "confirmed").length} sub="confirmed bookings" />}
         {!isClientView && !isStylistView && <StatCard label="New clients" value={newClientsToday} sub="first visit today" />}

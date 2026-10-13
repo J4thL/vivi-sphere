@@ -44,7 +44,7 @@ export function LoginPage({ onLogin, onGoRegister, onGoForgot, onBack }) {
           <LabeledInput label="Password" type="password" value={password} onChange={setPassword} placeholder="********" autoComplete="current-password" />
           <button type="button" onClick={onGoForgot} style={{ color: colors.wine }} className="text-xs mt-1">Forgot your password?</button>
         </div>
-        {error && <div style={{ color: colors.danger }} className="text-xs">{error}</div>}
+        {error && <div role="alert" style={{ color: colors.danger }} className="text-xs">{error}</div>}
         <button type="submit" className="btn-wine px-4 py-2.5 rounded-md text-sm font-medium mt-2">Log in</button>
       </form>
       <div style={{ color: colors.subtle }} className="text-xs mt-5 text-center">
@@ -84,7 +84,7 @@ export function RegisterPage({ onRegister, onGoLogin, onBack }) {
           {password && <div style={{ color: colors.subtle }} className="text-xs mt-1">Strength: {passwordScore(password)}</div>}
         </div>
         <LabeledInput label="Confirm password" type="password" value={confirm} onChange={setConfirm} placeholder="********" autoComplete="new-password" />
-        {error && <div style={{ color: colors.danger }} className="text-xs">{error}</div>}
+        {error && <div role="alert" style={{ color: colors.danger }} className="text-xs">{error}</div>}
         <button type="submit" className="btn-wine px-4 py-2.5 rounded-md text-sm font-medium mt-2">Create account</button>
       </form>
       <div style={{ color: colors.subtle }} className="text-xs mt-5 text-center">
@@ -135,7 +135,7 @@ export function ResetPasswordPage({ email, onSubmit, onBack }) {
       <form onSubmit={submit} className="flex flex-col gap-3">
         <LabeledInput label="New password" type="password" value={password} onChange={setPassword} placeholder="At least 8 characters" autoComplete="new-password" />
         <LabeledInput label="Confirm password" type="password" value={confirm} onChange={setConfirm} placeholder="********" autoComplete="new-password" />
-        {error && <div style={{ color: colors.danger }} className="text-xs">{error}</div>}
+        {error && <div role="alert" style={{ color: colors.danger }} className="text-xs">{error}</div>}
         <button type="submit" className="btn-wine px-4 py-2.5 rounded-md text-sm font-medium mt-2">Update password</button>
       </form>
     </AuthShell>

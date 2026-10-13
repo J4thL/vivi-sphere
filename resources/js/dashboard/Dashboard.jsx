@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { LogOut, Menu, Plus, X } from "lucide-react";
 import { apiDelete, apiSend } from "./api.js";
 import { NAV_ITEMS, STATUS_META, computeWeeklyRevenue, formatDateLabel, initials, rangesOverlap, timeToMinutes, todayStr } from "./helpers.js";
@@ -33,6 +33,18 @@ export default function Dashboard(props) {
   const isClientView = role === "client";
   const currentStylist = isStylistView ? (stylists.find((s) => s.id === user.stylistId) || stylists.find((s) => s.name === user.name) || stylists[0]) : null;
 
+  // Guards against double-clicks: while a save is in flight the handler is ignored and its button disabled.
+  const [busy, setBusy] = useState({});
+  const busyRef = useRef({});
+  const once = (key, fn) => async (...args) => {
+    if (busyRef.current[key]) return;
+    busyRef.current[key] = true;
+    setBusy((b) => ({ ...b, [key]: true }));
+    try { await fn(...args); } finally {
+      busyRef.current[key] = false;
+      setBusy((b) => ({ ...b, [key]: false }));
+    }
+  };
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stylistFilter, setStylistFilter] = useState("All");
@@ -101,7 +113,7 @@ export default function Dashboard(props) {
     resetForm();
   };
 
-  const submitAppointment = async () => {
+  const submitAppointmentRaw = async () => {
     if (!form.client.trim()) { setFormError("Enter a client name."); return; }
     if (!isWithinHours(form.time, form.service)) { setFormError(`That's outside our hours (${landingContent.openTime}–${landingContent.closeTime}).`); return; }
     const stylistName = form.stylist === "No preference" ? leastBookedActiveStylist(form.date) : form.stylist;
@@ -156,7 +168,7 @@ export default function Dashboard(props) {
     notify("Stylist updated.");
   };
 
-  const addStylist = async () => {
+  const addStylistRaw = async () => {
     if (!newStylist.name.trim()) return;
     const tempId = `temp-${Date.now()}`;
     const rec = { id: tempId, name: newStylist.name, role: newStylist.role || "Stylist", active: true, photoUrl: newStylist.photoUrl, bio: newStylist.bio };
@@ -178,7 +190,7 @@ export default function Dashboard(props) {
     if (target) apiSend(`/inventory/${id}`, "PATCH", { qty: Math.max(0, target.qty + delta) }, token).then((r) => { if (r?.error) notify(r.message, "error"); });
   };
 
-  const addInventoryItem = async () => {
+  const addInventoryItemRaw = async () => {
     if (!newItem.name.trim()) return;
     const tempId = `temp-${Date.now()}`;
     const rec = { id: tempId, name: newItem.name, category: newItem.category || "General", qty: Number(newItem.qty) || 0, reorder: Number(newItem.reorder) || 5, unitCost: Number(newItem.unitCost) || 0 };
@@ -213,7 +225,7 @@ export default function Dashboard(props) {
     if (id) apiSend(`/services/${id}`, "PATCH", { photo_url: photoUrl || null }, token).then((r) => { if (r?.error) notify(r.message, "error"); });
   };
 
-  const addService = async () => {
+  const addServiceRaw = async () => {
     if (!newService.name.trim()) { notify("Enter a service name.", "error"); return; }
     if (services[newService.name]) { notify("A service with that name already exists.", "error"); return; }
     const name = newService.name;
@@ -356,9 +368,14 @@ export default function Dashboard(props) {
 
   const pageTitle = isClientView ? `Hi, ${user.name.split(" ")[0]}` : isStylistView ? `Welcome back, ${currentStylist?.name.split(" ")[0]}` : NAV_ITEMS.find((n) => n.key === activeTab)?.label;
 
+  const submitAppointment = once("appointment", submitAppointmentRaw);
+  const addStylist = once("stylist", addStylistRaw);
+  const addService = once("service", addServiceRaw);
+  const addInventoryItem = once("inventory", addInventoryItemRaw);
+
   // Everything the tab components need, in one place.
   const ctx = {
-    activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
+    busy, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,

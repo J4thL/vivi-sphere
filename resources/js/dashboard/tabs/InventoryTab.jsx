@@ -1,10 +1,11 @@
 import { AlertTriangle, Minus, Plus } from "lucide-react";
+import { formatMoney } from "../helpers.js";
 import { serifFont, useTheme } from "../theme.jsx";
 import { Field, IconBtn } from "../ui.jsx";
 
 export default function InventoryTab({ ctx }) {
   const { colors } = useTheme();
-  const { addInventoryItem, adjustInventory, inventory, newItem, setNewItem } = ctx;
+  const { addInventoryItem, busy, adjustInventory, inventory, newItem, setNewItem } = ctx;
   return (
     <div className="flex flex-col gap-4">
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card overflow-x-auto">
@@ -25,7 +26,7 @@ export default function InventoryTab({ ctx }) {
                 <tr key={i.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
                   <td className="py-3 px-5 font-medium">{i.name}</td>
                   <td className="py-3 px-5" style={{ color: colors.subtle }}>{i.category}</td>
-                  <td className="py-3 px-5" style={{ color: colors.subtle }}>${i.unitCost.toFixed(2)}</td>
+                  <td className="py-3 px-5" style={{ color: colors.subtle }}>{formatMoney(i.unitCost)}</td>
                   <td className="py-3 px-5">
                     <div className="flex items-center gap-2">
                       <IconBtn onClick={() => adjustInventory(i.id, -1)} icon={Minus} color={colors.subtle} title="Decrease" />
@@ -54,7 +55,7 @@ export default function InventoryTab({ ctx }) {
           <Field label="Qty"><input type="number" value={newItem.qty} onChange={(e) => setNewItem({ ...newItem, qty: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-20" /></Field>
           <Field label="Reorder at"><input type="number" value={newItem.reorder} onChange={(e) => setNewItem({ ...newItem, reorder: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-24" /></Field>
           <Field label="Unit cost"><input type="number" value={newItem.unitCost} onChange={(e) => setNewItem({ ...newItem, unitCost: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-24" /></Field>
-          <button onClick={addInventoryItem} className="btn-wine px-4 py-2 rounded-md text-sm font-medium">Add item</button>
+          <button onClick={addInventoryItem} disabled={busy.inventory} className="btn-wine px-4 py-2 rounded-md text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">{busy.inventory ? "Adding…" : "Add item"}</button>
         </div>
       </div>
     </div>
