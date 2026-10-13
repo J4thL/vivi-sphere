@@ -4,7 +4,7 @@ import { Field, IconBtn, ThemeToggle } from "../ui.jsx";
 
 export default function SettingsTab({ ctx }) {
   const { colors } = useTheme();
-  const { addService, currentStylist, deleteService, isAdmin, isClientView, isManagerView, isStylistView, newService, saveSalonInfo, savedMsg, services, setNewService, setSiteDraft, siteDraft, updateServiceDuration, updateServicePrice, user } = ctx;
+  const { addService, busy, currentStylist, deleteService, isAdmin, isClientView, isManagerView, isStylistView, newService, saveSalonInfo, savedMsg, services, setNewService, setSiteDraft, siteDraft, updateServiceDuration, updateServicePrice, user } = ctx;
   return (
     <div className="flex flex-col gap-4 max-w-2xl">
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
@@ -49,7 +49,7 @@ export default function SettingsTab({ ctx }) {
               <div key={name} style={{ border: `1px solid ${colors.border}` }} className="flex items-center gap-2 p-2 rounded-md flex-wrap">
                 <span className="flex-1 min-w-[140px] text-sm font-medium truncate">{name}</span>
                 <div className="flex items-center gap-1">
-                  <span style={{ color: colors.subtle }} className="text-xs">$</span>
+                  <span style={{ color: colors.subtle }} className="text-xs">₱</span>
                   <input type="number" aria-label={`${name} price`} value={info.price} onChange={(e) => updateServicePrice(name, e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-16 px-2 py-1 rounded-md text-sm" />
                 </div>
                 <div className="flex items-center gap-1">
@@ -65,7 +65,7 @@ export default function SettingsTab({ ctx }) {
             <Field label="New service name"><input value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" placeholder="e.g. Scalp Treatment" /></Field>
             <Field label="Price"><input type="number" value={newService.price} onChange={(e) => setNewService({ ...newService, price: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-24" placeholder="65" /></Field>
             <Field label="Duration (min)"><input type="number" value={newService.duration} onChange={(e) => setNewService({ ...newService, duration: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-28" placeholder="45" /></Field>
-            <button onClick={addService} className="btn-wine px-4 py-2 rounded-md text-sm font-medium">Add service</button>
+            <button onClick={addService} disabled={busy.service} className="btn-wine px-4 py-2 rounded-md text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">{busy.service ? "Adding…" : "Add service"}</button>
           </div>
         </div>
       )}

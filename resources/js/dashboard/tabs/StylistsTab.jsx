@@ -5,7 +5,7 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function StylistsTab({ ctx }) {
   const { colors } = useTheme();
-  const { addStylist, appointments, editingStylistId, leaderboard, newStylist, saveStylistEdit, setEditingStylistId, setNewStylist, setStylistEditDraft, startEditStylist, stylistEditDraft, stylists, toggleStylistActive } = ctx;
+  const { addStylist, busy, appointments, editingStylistId, leaderboard, newStylist, saveStylistEdit, setEditingStylistId, setNewStylist, setStylistEditDraft, startEditStylist, stylistEditDraft, stylists, toggleStylistActive } = ctx;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid md:grid-cols-2 gap-4">
@@ -54,7 +54,7 @@ export default function StylistsTab({ ctx }) {
           <Field label="Title"><input value={newStylist.role} onChange={(e) => setNewStylist({ ...newStylist, role: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-36" placeholder="e.g. Colorist" /></Field>
           <Field label="Photo URL"><input value={newStylist.photoUrl} onChange={(e) => setNewStylist({ ...newStylist, photoUrl: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" placeholder="https://..." /></Field>
           <Field label="Bio"><input value={newStylist.bio} onChange={(e) => setNewStylist({ ...newStylist, bio: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-56" placeholder="Short bio for their profile" /></Field>
-          <button onClick={addStylist} className="btn-wine px-4 py-2 rounded-md text-sm font-medium">Add stylist</button>
+          <button onClick={addStylist} disabled={busy.stylist} className="btn-wine px-4 py-2 rounded-md text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">{busy.stylist ? "Adding…" : "Add stylist"}</button>
         </div>
       </div>
     </div>

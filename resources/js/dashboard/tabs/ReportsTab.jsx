@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { ChartPlaceholder, RevenueByServiceChart } from "../lazyCharts.jsx";
+import { formatMoney } from "../helpers.js";
 import { serifFont, useTheme } from "../theme.jsx";
 import { StatCard } from "../ui.jsx";
 
@@ -14,9 +15,9 @@ export default function ReportsTab({ ctx }) {
         ))}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total revenue" value={`$${totalReportRevenue.toLocaleString()}`} sub={`this ${reportRange}`} />
+        <StatCard label="Total revenue" value={formatMoney(totalReportRevenue)} sub={`this ${reportRange}`} />
         <StatCard label="Completed services" value={completedInRange} sub={`this ${reportRange}`} />
-        <StatCard label="Average ticket" value={`$${avgTicket}`} sub="per completed visit" />
+        <StatCard label="Average ticket" value={formatMoney(avgTicket)} sub="per completed visit" />
         <StatCard label="Cancellation rate" value={`${cancellationRate}%`} sub={`this ${reportRange}`} />
       </div>
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">

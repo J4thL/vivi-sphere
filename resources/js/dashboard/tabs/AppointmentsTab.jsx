@@ -1,11 +1,11 @@
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, Play, Plus, X } from "lucide-react";
-import { STATUS_META, addDays, initials, statusColor, todayStr } from "../helpers.js";
+import { STATUS_META, addDays, formatMoney, initials, statusColor, todayStr } from "../helpers.js";
 import { serifFont, useTheme } from "../theme.jsx";
 import { Field, IconBtn } from "../ui.jsx";
 
 export default function AppointmentsTab({ ctx }) {
   const { colors } = useTheme();
-  const { advanceStatus, cancelAppointment, clients, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
+  const { advanceStatus, busy, cancelAppointment, clients, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
   return (
     <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
       {(isManagerView || isStylistView) && (
@@ -66,7 +66,7 @@ export default function AppointmentsTab({ ctx }) {
             )}
             <Field label="Service">
               <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
-                {Object.keys(services).map((s) => <option key={s}>{s} ({services[s].duration}m)</option>)}
+                {Object.keys(services).map((s) => <option key={s} value={s}>{s} ({services[s].duration}m)</option>)}
               </select>
             </Field>
             <Field label="Stylist">
@@ -81,11 +81,11 @@ export default function AppointmentsTab({ ctx }) {
             <Field label="Time">
               <input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm" />
             </Field>
-            <button onClick={submitAppointment} className="btn-wine px-4 py-2 rounded-md text-sm font-medium">{editingId ? "Save changes" : "Save"}</button>
+            <button onClick={submitAppointment} disabled={busy.appointment} className="btn-wine px-4 py-2 rounded-md text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">{busy.appointment ? "Saving…" : editingId ? "Save changes" : "Save"}</button>
             <button onClick={resetForm} style={{ color: colors.subtle }} className="px-2 py-2 text-sm">Cancel</button>
           </div>
           {formError && (
-            <div className="flex items-center gap-3 flex-wrap">
+            <div role="alert" className="flex items-center gap-3 flex-wrap">
               <span style={{ color: colors.danger }} className="text-xs">{formError}</span>
               {formError.includes("already exists") && <button onClick={() => { setForm({ ...form, newClient: true }); setFormError(""); }} style={{ color: colors.wine }} className="text-xs font-medium underline">Book as a new client with this name</button>}
               {formError.includes("booked over this time") && <button onClick={joinWaitlist} style={{ color: colors.wine }} className="text-xs font-medium underline">Join waitlist instead</button>}
@@ -104,7 +104,7 @@ export default function AppointmentsTab({ ctx }) {
               <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">{initials(isClientView ? a.service : a.client)}</div>
               <div className="min-w-0">
                 <div className="font-medium truncate">{isClientView ? a.service : a.client}</div>
-                <div style={{ color: colors.subtle }} className="text-xs truncate">{isClientView ? `with ${a.stylist}` : `${a.service} · ${a.stylist}`} · ${(a.price ?? priceOf(a.service))} · {(a.duration ?? durationOf(a.service))}m</div>
+                <div style={{ color: colors.subtle }} className="text-xs truncate">{isClientView ? `with ${a.stylist}` : `${a.service} · ${a.stylist}`} · {formatMoney(a.price ?? priceOf(a.service))} · {(a.duration ?? durationOf(a.service))}m</div>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">

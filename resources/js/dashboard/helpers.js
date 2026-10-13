@@ -194,3 +194,6 @@ export function normalizeWaitlistEntry(w) {
     preferredDate: String(w.preferred_date ?? w.preferredDate).slice(0, 10),
   };
 }
+
+// Salon currency: Philippine peso, formatted in one place.
+export const formatMoney = (n) => `₱${Number(n || 0).toLocaleString("en-PH", { maximumFractionDigits: 2 })}`;
