@@ -34,13 +34,13 @@ export default function ClientsTab({ ctx }) {
                     {c.spend > 1000 && <span style={{ background: colors.wineSoft, color: colors.wine }} className="text-[10px] px-1.5 py-0.5 rounded-md font-medium">VIP</span>}
                   </div>
                 </td>
-                <td className="py-3 px-5" style={{ color: colors.subtle }}>{c.phone}</td>
+                <td className="dc-subtle py-3 px-5">{c.phone}</td>
                 <td className="py-3 px-5">{c.visits}</td>
-                <td className="py-3 px-5" style={{ color: colors.subtle }}>{c.lastVisit}</td>
+                <td className="dc-subtle py-3 px-5">{c.lastVisit}</td>
                 <td className="py-3 px-5 font-medium">{formatMoney(c.spend)}</td>
               </tr>
             ))}
-            {filteredClients.length === 0 && <tr><td colSpan={5} className="text-center py-8" style={{ color: colors.subtle }}>No clients found.</td></tr>}
+            {filteredClients.length === 0 && <tr><td colSpan={5} className="dc-subtle text-center py-8">No clients found.</td></tr>}
           </tbody>
         </table>
       </div>

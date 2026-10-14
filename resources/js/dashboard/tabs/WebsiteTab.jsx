@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { serifFont, useTheme } from "../theme.jsx";
+import { useTheme } from "../theme.jsx";
 import { Field } from "../ui.jsx";
 
 export default function WebsiteTab({ ctx }) {
@@ -8,7 +8,7 @@ export default function WebsiteTab({ ctx }) {
   return (
     <div className="flex flex-col gap-4 max-w-3xl">
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-        <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Hero section</div>
+        <div className="font-display text-lg mb-4">Hero section</div>
         <div className="flex flex-col gap-3">
           <Field label="Headline"><input value={siteDraft.heroHeadline} onChange={(e) => setSiteDraft({ ...siteDraft, heroHeadline: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
           <Field label="Subtext"><textarea value={siteDraft.heroSub} onChange={(e) => setSiteDraft({ ...siteDraft, heroSub: e.target.value })} rows={2} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
@@ -16,8 +16,8 @@ export default function WebsiteTab({ ctx }) {
       </div>
 
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-        <div style={{ fontFamily: serifFont }} className="text-lg mb-1">Featured services</div>
-        <div style={{ color: colors.subtle }} className="text-xs mb-4">Check the ones to show on the landing page, and optionally add a photo for each.</div>
+        <div className="font-display text-lg mb-1">Featured services</div>
+        <div className="dc-subtle text-xs mb-4">Check the ones to show on the landing page, and optionally add a photo for each.</div>
         <div className="flex flex-col gap-3">
           {Object.keys(services).map((name) => (
             <div key={name} style={{ border: `1px solid ${colors.border}` }} className="flex items-center gap-3 p-3 rounded-md flex-wrap">
@@ -40,7 +40,7 @@ export default function WebsiteTab({ ctx }) {
       </div>
 
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-        <div style={{ fontFamily: serifFont }} className="text-lg mb-4">FAQs</div>
+        <div className="font-display text-lg mb-4">FAQs</div>
         <div className="flex flex-col gap-2 mb-4">
           {siteDraft.faqs.map((f) => (
             <div key={f.id} style={{ border: `1px solid ${colors.border}` }} className="flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm">
@@ -57,7 +57,7 @@ export default function WebsiteTab({ ctx }) {
       </div>
 
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-        <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Contact, hours & policy</div>
+        <div className="font-display text-lg mb-4">Contact, hours & policy</div>
         <div className="grid sm:grid-cols-2 gap-3 mb-3">
           <Field label="Phone"><input value={siteDraft.contactPhone} onChange={(e) => setSiteDraft({ ...siteDraft, contactPhone: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
           <Field label="Address / map query"><input value={siteDraft.contactAddress} onChange={(e) => setSiteDraft({ ...siteDraft, contactAddress: e.target.value, mapQuery: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>

@@ -61,7 +61,7 @@ export function ConfirmModal({ confirm, onCancel, onConfirm }) {
       <div ref={dialogRef} role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-message" style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 max-w-sm w-full dash-card">
         <div id="confirm-dialog-message" className="text-sm mb-4">{confirm.message}</div>
         <div className="flex justify-end gap-2">
-          <button ref={cancelRef} onClick={onCancel} style={{ color: colors.subtle }} className="text-sm px-3 py-1.5">Cancel</button>
+          <button ref={cancelRef} onClick={onCancel} className="dc-subtle text-sm px-3 py-1.5">Cancel</button>
           <button onClick={onConfirm} style={{ background: colors.danger, color: "#fff" }} className="text-sm px-3 py-1.5 rounded-md font-medium">{confirm.confirmLabel || "Confirm"}</button>
         </div>
       </div>
@@ -121,7 +121,7 @@ export function StatCard({ label, value, sub, trend }) {
   return (
     <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="stat-card dash-card rounded-xl p-5">
       <div className="flex items-center justify-between mb-3 gap-2">
-        <div style={{ color: colors.subtle }} className="text-[11px] font-semibold uppercase tracking-wider">{label}</div>
+        <div className="dc-subtle text-[11px] font-semibold uppercase tracking-wider">{label}</div>
         {trend !== null && trend !== undefined && (
           <div style={{ color: trend >= 0 ? colors.success : colors.danger, background: trend >= 0 ? colors.successSoft : colors.dangerSoft }} className="text-[11px] font-semibold flex items-center gap-0.5 px-1.5 py-0.5 rounded-full">
             {trend >= 0 ? "▲" : "▼"} {Math.abs(trend)}%
@@ -129,18 +129,17 @@ export function StatCard({ label, value, sub, trend }) {
         )}
       </div>
       <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-2xl md:text-3xl leading-none mb-2">{value}</div>
-      <div style={{ color: colors.subtle }} className="text-xs">{sub}</div>
+      <div className="dc-subtle text-xs">{sub}</div>
     </div>
   );
 }
 
 export function Field({ label, children }) {
-  const { colors } = useTheme();
   return (
     // The <label> wraps the control, so the text is programmatically tied to the input
     // (screen readers announce it, and clicking the text focuses the field).
     <label className="flex flex-col gap-1">
-      <span style={{ color: colors.subtle }} className="text-xs">{label}</span>
+      <span className="dc-subtle text-xs">{label}</span>
       {children}
     </label>
   );

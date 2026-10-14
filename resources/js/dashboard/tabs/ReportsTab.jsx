@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { ChartPlaceholder, RevenueByServiceChart } from "../lazyCharts.jsx";
 import { formatMoney } from "../helpers.js";
-import { serifFont, useTheme } from "../theme.jsx";
+import { useTheme } from "../theme.jsx";
 import { StatCard } from "../ui.jsx";
 
 export default function ReportsTab({ ctx }) {
@@ -21,7 +21,7 @@ export default function ReportsTab({ ctx }) {
         <StatCard label="Cancellation rate" value={`${cancellationRate}%`} sub={`this ${reportRange}`} />
       </div>
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-        <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Revenue by service</div>
+        <div className="font-display text-lg mb-4">Revenue by service</div>
         <Suspense fallback={<ChartPlaceholder height={240} />}><RevenueByServiceChart data={revenueByService} colors={colors} /></Suspense>
       </div>
     </div>
