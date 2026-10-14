@@ -17,7 +17,7 @@
   --color-rosesoft: #f8ecf0;
   --color-cream: #fdf8fa;
   --color-ink: #2e2229;
-  --color-subtle: #6f5d66; /* darkened from #8C7A82 so small text meets WCAG AA on white */
+  --color-subtle: #6b5961; /* matches LIGHT_COLORS.subtle in dashboard/theme.jsx; keep the two in sync (>=5.3:1 on light surfaces) */
   --color-line: #efe4e9;
 
   --shadow-card: 0 1px 2px rgb(46 34 41 / 0.04), 0 4px 16px rgb(122 57 86 / 0.06);

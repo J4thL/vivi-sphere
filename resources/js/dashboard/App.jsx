@@ -3,15 +3,27 @@ import Dashboard from "./Dashboard.jsx";
 import { GA_MEASUREMENT_ID, apiGet, apiSend, savedToken, setUnauthorizedHandler } from "./api.js";
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from "./AuthPages.jsx";
 import { EMPTY_LANDING_CONTENT, fromApiSettings, normalizeAppointment, normalizeClient, normalizeInventoryItem, normalizeReview, normalizeStylist, normalizeWaitlistEntry, toApiSettings } from "./helpers.js";
-import { BrandContext, DARK_COLORS, DEFAULT_BRAND, GlobalStyle, LIGHT_COLORS, ThemeContext, sansFont } from "./theme.jsx";
+import { BrandContext, DARK_COLORS, DEFAULT_BRAND, GlobalStyle, LIGHT_COLORS, THEME_KEY, ThemeContext, sansFont } from "./theme.jsx";
 import { BootLoader, ConfirmModal, ErrorBoundary, NotifyBanner } from "./ui.jsx";
 
 const SESSION_EXPIRED_MESSAGE = "Your session expired. Please log in again.";
 
 export default function App() {
-  const [theme, setTheme] = useState("light");
+  // Theme: remembered per browser; first visit follows the OS preference. Storage can be blocked, so every access is guarded.
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === "light" || saved === "dark") return saved;
+    } catch { /* storage unavailable */ }
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
   const colors = theme === "dark" ? DARK_COLORS : LIGHT_COLORS;
-  const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));
+  const toggleTheme = () => setTheme((t) => {
+    const next = t === "light" ? "dark" : "light";
+    try { localStorage.setItem(THEME_KEY, next); } catch { /* storage unavailable */ }
+    return next;
+  });
+  useEffect(() => { document.documentElement.style.colorScheme = theme; }, [theme]);
 
   const [screen, setScreen] = useState("login");
   const [user, setUser] = useState(null);
