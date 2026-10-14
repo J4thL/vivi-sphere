@@ -15,6 +15,7 @@ export const DARK_COLORS = {
   warn: "#E3C15E", warnSoft: "#332A16", cardBg: "#241A1F", pageBg: "#170F13",
 };
 
+export const THEME_KEY = "vivi-theme";
 export const ThemeContext = createContext({ colors: LIGHT_COLORS, theme: "light", toggleTheme: () => {} });
 export const useTheme = () => useContext(ThemeContext);
 
