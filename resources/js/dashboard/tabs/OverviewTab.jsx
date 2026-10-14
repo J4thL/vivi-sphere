@@ -21,10 +21,10 @@ export default function OverviewTab({ ctx }) {
 
       {isClientView && reviewableAppointments.length > 0 && (
         <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card mb-6">
-          <div style={{ fontFamily: serifFont }} className="text-lg mb-3">How was your visit?</div>
+          <div className="font-display text-lg mb-3">How was your visit?</div>
           {reviewableAppointments.map((a) => {
             const draft = reviewDraft[a.id] || {};
-            if (draft.submitted) return <div key={a.id} style={{ color: colors.success }} className="text-sm">Thanks for reviewing your {a.service}.</div>;
+            if (draft.submitted) return <div key={a.id} className="dc-success text-sm">Thanks for reviewing your {a.service}.</div>;
             return (
               <div key={a.id} className="flex flex-col gap-2 mb-3">
                 <div className="text-sm">{a.service} with {a.stylist}</div>
@@ -46,8 +46,8 @@ export default function OverviewTab({ ctx }) {
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="md:col-span-2 rounded-xl p-5 dash-card">
           <div className="flex items-center justify-between mb-4">
-            <div style={{ fontFamily: serifFont }} className="text-lg">{isClientView ? "My upcoming visits" : isStylistView ? "My schedule" : "Today's schedule"}</div>
-            <button onClick={() => setActiveTab("appointments")} style={{ color: colors.wine }} className="text-xs font-medium">View all</button>
+            <div className="font-display text-lg">{isClientView ? "My upcoming visits" : isStylistView ? "My schedule" : "Today's schedule"}</div>
+            <button onClick={() => setActiveTab("appointments")} className="dc-wine text-xs font-medium">View all</button>
           </div>
           <div className="flex flex-col gap-3">
             {overviewPreview.slice(0, 5).map((a) => (
@@ -55,23 +55,23 @@ export default function OverviewTab({ ctx }) {
                 <div className="flex items-center gap-3 min-w-0">
                   <span style={{ color: colors.subtle, fontFamily: serifFont }} className="w-12 flex-shrink-0">{a.time}</span>
                   <span className="font-medium truncate">{isClientView ? a.service : a.client}</span>
-                  <span style={{ color: colors.subtle }} className="truncate hidden sm:inline">· {isClientView ? a.stylist : a.service}</span>
+                  <span className="dc-subtle truncate hidden sm:inline">· {isClientView ? a.stylist : a.service}</span>
                 </div>
                 <span style={{ color: statusColor(a.status, colors) }} className="text-xs font-medium flex-shrink-0">{STATUS_META[a.status].label}</span>
               </div>
             ))}
-            {overviewPreview.length === 0 && <div style={{ color: colors.subtle }} className="text-sm">Nothing on the books yet.</div>}
+            {overviewPreview.length === 0 && <div className="dc-subtle text-sm">Nothing on the books yet.</div>}
           </div>
         </div>
 
         {isManagerView && (
           <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-            <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Stylist leaderboard <span style={{ color: colors.subtle }} className="text-xs font-sans">· last 6 months</span></div>
+            <div className="font-display text-lg mb-4">Stylist leaderboard <span className="dc-subtle text-xs font-sans">· last 6 months</span></div>
             <div className="flex flex-col gap-4">
               {leaderboard.map((s, i) => (
                 <div key={s.name}>
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="font-medium" style={{ color: i === 0 ? colors.wine : colors.ink }}>{s.name}{i === 0 && <span style={{ color: colors.subtle }} className="font-normal text-xs"> · top today</span>}</span>
+                    <span className="font-medium" style={{ color: i === 0 ? colors.wine : colors.ink }}>{s.name}{i === 0 && <span className="dc-subtle font-normal text-xs"> · top today</span>}</span>
                     <span style={{ color: colors.subtle }}>${s.total}</span>
                   </div>
                   <div style={{ background: colors.roseSoft }} className="h-1.5 rounded-full overflow-hidden">
@@ -84,19 +84,19 @@ export default function OverviewTab({ ctx }) {
         )}
         {isStylistView && (
           <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-            <div style={{ fontFamily: serifFont }} className="text-lg mb-4">My upcoming</div>
+            <div className="font-display text-lg mb-4">My upcoming</div>
             <div className="flex flex-col gap-3">
               {overviewPreview.filter((a) => a.status === "confirmed").slice(0, 4).map((a) => (
                 <div key={a.id} className="text-sm flex items-center justify-between"><span>{a.date} {a.time} · {a.client}</span><span style={{ color: colors.subtle }}>{a.service}</span></div>
               ))}
-              {overviewPreview.filter((a) => a.status === "confirmed").length === 0 && <div style={{ color: colors.subtle }} className="text-sm">All caught up.</div>}
+              {overviewPreview.filter((a) => a.status === "confirmed").length === 0 && <div className="dc-subtle text-sm">All caught up.</div>}
             </div>
           </div>
         )}
         {isClientView && (
           <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-            <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Book something new</div>
-            <div style={{ color: colors.subtle }} className="text-sm mb-4">Pick a service and we'll match you with the next available stylist.</div>
+            <div className="font-display text-lg mb-4">Book something new</div>
+            <div className="dc-subtle text-sm mb-4">Pick a service and we'll match you with the next available stylist.</div>
             <button onClick={() => { setActiveTab("appointments"); resetForm(); setShowForm(true); }} className="btn-wine w-full px-4 py-2.5 rounded-md text-sm font-medium">Book appointment</button>
           </div>
         )}
@@ -105,15 +105,15 @@ export default function OverviewTab({ ctx }) {
       {!isClientView && (
         <div className="grid md:grid-cols-3 gap-4">
           <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="md:col-span-2 rounded-xl p-5 dash-card">
-            <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Weekly revenue</div>
+            <div className="font-display text-lg mb-4">Weekly revenue</div>
             <Suspense fallback={<ChartPlaceholder height={220} />}><WeeklyRevenueChart data={weeklyRevenue} colors={colors} /></Suspense>
           </div>
           <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-            <div style={{ fontFamily: serifFont }} className="text-lg mb-4">{isStylistView ? "My day" : "Today's status mix"}</div>
+            <div className="font-display text-lg mb-4">{isStylistView ? "My day" : "Today's status mix"}</div>
             {statusBreakdown.length > 0 ? (
               <Suspense fallback={<ChartPlaceholder height={220} />}><StatusPieChart data={statusBreakdown} colors={colors} statusColor={statusColor} /></Suspense>
             ) : (
-              <div style={{ color: colors.subtle }} className="text-sm h-[220px] flex items-center justify-center text-center">Nothing scheduled for this day yet.</div>
+              <div className="dc-subtle text-sm h-[220px] flex items-center justify-center text-center">Nothing scheduled for this day yet.</div>
             )}
           </div>
         </div>

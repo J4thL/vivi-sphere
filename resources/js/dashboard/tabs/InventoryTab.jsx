@@ -1,6 +1,6 @@
 import { AlertTriangle, Minus, Plus } from "lucide-react";
 import { formatMoney } from "../helpers.js";
-import { serifFont, useTheme } from "../theme.jsx";
+import { useTheme } from "../theme.jsx";
 import { Field, IconBtn } from "../ui.jsx";
 
 export default function InventoryTab({ ctx }) {
@@ -25,8 +25,8 @@ export default function InventoryTab({ ctx }) {
               return (
                 <tr key={i.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
                   <td className="py-3 px-5 font-medium">{i.name}</td>
-                  <td className="py-3 px-5" style={{ color: colors.subtle }}>{i.category}</td>
-                  <td className="py-3 px-5" style={{ color: colors.subtle }}>{formatMoney(i.unitCost)}</td>
+                  <td className="dc-subtle py-3 px-5">{i.category}</td>
+                  <td className="dc-subtle py-3 px-5">{formatMoney(i.unitCost)}</td>
                   <td className="py-3 px-5">
                     <div className="flex items-center gap-2">
                       <IconBtn onClick={() => adjustInventory(i.id, -1)} icon={Minus} color={colors.subtle} title="Decrease" />
@@ -48,7 +48,7 @@ export default function InventoryTab({ ctx }) {
         </table>
       </div>
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-        <div style={{ fontFamily: serifFont }} className="text-lg mb-4">Add inventory item</div>
+        <div className="font-display text-lg mb-4">Add inventory item</div>
         <div className="flex items-end gap-3 flex-wrap">
           <Field label="Name"><input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" /></Field>
           <Field label="Category"><input value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-32" /></Field>

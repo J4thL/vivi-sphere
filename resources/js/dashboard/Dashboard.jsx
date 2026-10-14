@@ -403,10 +403,10 @@ export default function Dashboard(props) {
             <div style={{ background: colors.wine, color: colors.cardBg, fontFamily: serifFont }} className="w-9 h-9 rounded-lg flex items-center justify-center text-lg font-semibold flex-shrink-0">{(brand.trim()[0] || "V").toUpperCase()}</div>
             <div>
               <div style={{ fontFamily: serifFont, color: colors.wine }} className="text-xl leading-tight">{brand}</div>
-              <div style={{ color: colors.subtle }} className="text-[11px]">{isClientView ? "My account" : "Salon administration"}</div>
+              <div className="dc-subtle text-[11px]">{isClientView ? "My account" : "Salon administration"}</div>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} aria-label="Close menu" className="md:hidden" style={{ color: colors.subtle }}><X size={18} /></button>
+          <button onClick={() => setSidebarOpen(false)} aria-label="Close menu" className="dc-subtle md:hidden"><X size={18} /></button>
         </div>
 
         <nav className="flex flex-col gap-1 overflow-y-auto">
@@ -417,7 +417,7 @@ export default function Dashboard(props) {
             return (
               <React.Fragment key={item.key}>
                 {showGroupLabel && (
-                  <div style={{ color: colors.subtle }} className="text-[10px] font-semibold uppercase tracking-wide px-3 pt-3 pb-1 first:pt-0">
+                  <div className="dc-subtle text-[10px] font-semibold uppercase tracking-wide px-3 pt-3 pb-1 first:pt-0">
                     {item.group}
                   </div>
                 )}
@@ -443,7 +443,7 @@ export default function Dashboard(props) {
               <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0">{initials(user.name)}</div>
               <div className="text-xs min-w-0">
                 <div className="font-medium truncate">{user.name}</div>
-                <div style={{ color: colors.subtle }} className="capitalize">{role}</div>
+                <div className="dc-subtle capitalize">{role}</div>
               </div>
             </div>
             <button onClick={onLogout} aria-label="Log out" title="Log out" style={{ color: colors.subtle }}><LogOut size={15} /></button>
@@ -454,10 +454,10 @@ export default function Dashboard(props) {
       <main className="flex-1 min-w-0" style={{ background: colors.pageBg }}>
         <div style={{ borderBottom: `1px solid ${colors.border}`, background: colors.cardBg }} className="flex items-center justify-between px-4 md:px-8 py-4 gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="md:hidden" style={{ color: colors.subtle }}><Menu size={20} /></button>
+            <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" className="dc-subtle md:hidden"><Menu size={20} /></button>
             <div className="min-w-0">
               <div style={{ fontFamily: serifFont, color: colors.ink }} className="text-xl md:text-2xl leading-tight truncate">{pageTitle}</div>
-              <div style={{ color: colors.subtle }} className="text-xs hidden sm:block">{isStylistView ? currentStylist?.role : isClientView ? "Your appointments and visit history" : formatDateLabel(selectedDate)}</div>
+              <div className="dc-subtle text-xs hidden sm:block">{isStylistView ? currentStylist?.role : isClientView ? "Your appointments and visit history" : formatDateLabel(selectedDate)}</div>
             </div>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
@@ -475,7 +475,7 @@ export default function Dashboard(props) {
               <button onClick={resendVerification} className="text-xs font-medium underline">Resend verification email</button>
             </div>
           )}
-          {dashLoading && <div style={{ color: colors.subtle }} className="text-sm mb-4">Refreshing your data...</div>}
+          {dashLoading && <div className="dc-subtle text-sm mb-4">Refreshing your data...</div>}
 
 
           {activeTab === "overview" && <OverviewTab ctx={ctx} />}

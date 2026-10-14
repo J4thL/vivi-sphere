@@ -33,6 +33,13 @@ export function GlobalStyle() {
   return (
     <style>{`
       body { font-family: ${sansFont}; -webkit-font-smoothing: antialiased; }
+      /* Colour/font utilities driven by the active theme, so components don't need inline style={{}} for them. */
+      :root { ${Object.entries(colors).map(([k, v]) => `--dc-${k}: ${v};`).join(" ")} }
+      .dc-subtle { color: var(--dc-subtle); }
+      .dc-wine { color: var(--dc-wine); }
+      .dc-danger { color: var(--dc-danger); }
+      .dc-success { color: var(--dc-success); }
+      .font-display { font-family: ${serifFont}; }
       button, a, input, select, textarea { transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease, transform 0.1s ease; }
       button { cursor: pointer; }
       button:disabled { cursor: not-allowed; opacity: 0.6; }
