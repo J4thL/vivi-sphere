@@ -5,7 +5,7 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function AppointmentsTab({ ctx }) {
   const { colors } = useTheme();
-  const { advanceStatus, busy, cancelAppointment, clients, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
+  const { advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
   return (
     <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
       {(isManagerView || isStylistView) && (
@@ -126,7 +126,7 @@ export default function AppointmentsTab({ ctx }) {
               <div key={w.id} style={{ border: `1px solid ${colors.border}` }} className="flex items-center justify-between px-3 py-2 rounded-md text-sm">
                 <span>{w.clientName} &middot; {w.service} &middot; wants {w.preferredDate}{w.stylist ? ` with ${w.stylist}` : ""}</span>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => { setForm({ client: w.clientName, service: w.service, stylist: w.stylist || "No preference", date: w.preferredDate, time: "12:00" }); setShowForm(true); }} className="dc-wine text-xs font-medium">Convert</button>
+                  <button onClick={() => convertWaitlistEntry(w)} className="dc-wine text-xs font-medium">Convert</button>
                   <IconBtn onClick={() => removeWaitlistEntry(w.id)} title="Remove" icon={X} color={colors.danger} />
                 </div>
               </div>

@@ -2,6 +2,15 @@ import { X } from "lucide-react";
 import { useTheme } from "../theme.jsx";
 import { Field, IconBtn, ThemeToggle } from "../ui.jsx";
 
+// Number inputs here save when the field loses focus (or Enter is pressed), not on every keystroke.
+// An empty or unchanged value just snaps back to what is saved.
+const blurOnEnter = (e) => { if (e.key === "Enter") e.currentTarget.blur(); };
+const commitIfChanged = (e, current, save) => {
+  const next = e.target.value;
+  if (next === "" || Number(next) === current) { e.target.value = current; return; }
+  save(next);
+};
+
 export default function SettingsTab({ ctx }) {
   const { colors } = useTheme();
   const { addService, busy, currentStylist, deleteService, isAdmin, isClientView, isManagerView, isStylistView, newService, saveSalonInfo, savedMsg, services, setNewService, setSiteDraft, siteDraft, updateServiceDuration, updateServicePrice, user } = ctx;
@@ -50,10 +59,10 @@ export default function SettingsTab({ ctx }) {
                 <span className="flex-1 min-w-[140px] text-sm font-medium truncate">{name}</span>
                 <div className="flex items-center gap-1">
                   <span className="dc-subtle text-xs">₱</span>
-                  <input type="number" aria-label={`${name} price`} value={info.price} onChange={(e) => updateServicePrice(name, e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-16 px-2 py-1 rounded-md text-sm" />
+                  <input type="number" aria-label={`${name} price`} key={`price-${info.price}`} defaultValue={info.price} onBlur={(e) => commitIfChanged(e, info.price, (v) => updateServicePrice(name, v))} onKeyDown={blurOnEnter} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-16 px-2 py-1 rounded-md text-sm" />
                 </div>
                 <div className="flex items-center gap-1">
-                  <input type="number" aria-label={`${name} duration in minutes`} value={info.duration} onChange={(e) => updateServiceDuration(name, e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-14 px-2 py-1 rounded-md text-sm" />
+                  <input type="number" aria-label={`${name} duration in minutes`} key={`duration-${info.duration}`} defaultValue={info.duration} onBlur={(e) => commitIfChanged(e, info.duration, (v) => updateServiceDuration(name, v))} onKeyDown={blurOnEnter} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="w-14 px-2 py-1 rounded-md text-sm" />
                   <span className="dc-subtle text-xs">min</span>
                 </div>
                 <IconBtn onClick={() => deleteService(name)} title="Delete service" icon={X} color={colors.danger} />
