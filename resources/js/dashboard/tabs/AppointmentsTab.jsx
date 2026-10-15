@@ -71,7 +71,7 @@ export default function AppointmentsTab({ ctx }) {
             </Field>
             <Field label="Stylist">
               <select value={form.stylist} onChange={(e) => setForm({ ...form, stylist: e.target.value })} disabled={isStylistView} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
-                {(isClientView || !editingId) && <option>No preference</option>}
+                {!editingId && <option>No preference</option>}
                 {stylists.filter((s) => s.active).map((s) => <option key={s.id}>{s.name}</option>)}
               </select>
             </Field>
