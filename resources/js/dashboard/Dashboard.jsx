@@ -31,7 +31,7 @@ export default function Dashboard(props) {
   const isAdmin = role === "admin";
   const isStylistView = role === "stylist";
   const isClientView = role === "client";
-  const currentStylist = isStylistView ? (stylists.find((s) => s.id === user.stylistId) || stylists.find((s) => s.name === user.name) || stylists[0]) : null;
+  const currentStylist = isStylistView ? (stylists.find((s) => s.id === (user.stylist_id ?? user.stylist?.id)) || null) : null;
 
   // Guards against double-clicks: while a save is in flight the handler is ignored and its button disabled.
   const [busy, setBusy] = useState({});
@@ -293,11 +293,9 @@ export default function Dashboard(props) {
     }
   };
 
-  const scopedAppointments = isStylistView
-    ? appointments.filter((a) => a.stylist === currentStylist?.name)
-    : isClientView
-    ? appointments.filter((a) => a.client === user.name)
-    : appointments;
+  // The API already limits appointments to the signed-in stylist's or client's own,
+  // so no name-based filtering here (names aren't unique and can differ from the login name).
+  const scopedAppointments = appointments;
 
   const dayAppointments = isManagerView || isStylistView ? scopedAppointments.filter((a) => a.date === selectedDate) : scopedAppointments;
 
@@ -357,7 +355,7 @@ export default function Dashboard(props) {
   }).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
   const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(clientSearch.toLowerCase()));
-  const myClientRecord = isClientView ? clients.find((c) => c.name === user.name) : null;
+  const myClientRecord = isClientView ? (clients[0] ?? null) : null; // API returns only this client's own record
   const reviewableAppointments = isClientView ? scopedAppointments.filter((a) => a.status === "completed" && !reviews.some((r) => r.appointmentId === a.id)) : [];
 
   const totalReportRevenue = Math.round(reportAppointments.filter((a) => a.status === "completed").reduce((s, a) => s + (a.price ?? priceOf(a.service)), 0));
@@ -366,7 +364,7 @@ export default function Dashboard(props) {
   const cancellationRate = reportAppointments.length > 0 ? Math.round((cancelledInRange / reportAppointments.length) * 100) : 0;
   const avgTicket = Math.round(totalReportRevenue / Math.max(1, completedInRange));
 
-  const pageTitle = isClientView ? `Hi, ${user.name.split(" ")[0]}` : isStylistView ? `Welcome back, ${currentStylist?.name.split(" ")[0]}` : NAV_ITEMS.find((n) => n.key === activeTab)?.label;
+  const pageTitle = isClientView ? `Hi, ${user.name.split(" ")[0]}` : isStylistView ? `Welcome back, ${(currentStylist?.name ?? user.name).split(" ")[0]}` : NAV_ITEMS.find((n) => n.key === activeTab)?.label;
 
   const submitAppointment = once("appointment", submitAppointmentRaw);
   const addStylist = once("stylist", addStylistRaw);
@@ -469,7 +467,7 @@ export default function Dashboard(props) {
 
         <div className="p-4 md:p-8">
           <NotifyBanner notice={notice} />
-          {isClientView && user.emailVerified === false && (
+          {isClientView && !user.email_verified_at && (
             <div style={{ background: colors.warnSoft, color: colors.warn }} className="text-sm px-4 py-2.5 rounded-md mb-4 flex items-center justify-between gap-3 flex-wrap">
               <span>Verify your email to keep your account secure.</span>
               <button onClick={resendVerification} className="text-xs font-medium underline">Resend verification email</button>
