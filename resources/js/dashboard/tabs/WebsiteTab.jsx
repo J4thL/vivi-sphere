@@ -26,8 +26,10 @@ export default function WebsiteTab({ ctx }) {
                 {name}
               </label>
               <input
-                value={services[name].photoUrl || ""}
-                onChange={(e) => updateServicePhoto(name, e.target.value)}
+                key={`photo-${services[name].photoUrl || ""}`}
+                defaultValue={services[name].photoUrl || ""}
+                onBlur={(e) => { const next = e.target.value.trim(); if (next !== (services[name].photoUrl || "")) updateServicePhoto(name, next); }}
+                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                 aria-label={`${name} photo URL`}
                 placeholder="Photo URL (optional)"
                 style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }}

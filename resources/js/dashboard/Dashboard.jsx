@@ -56,6 +56,7 @@ export default function Dashboard(props) {
   const [formError, setFormError] = useState("");
   const emptyForm = { client: isClientView ? user.name : "", clientId: null, newClient: false, service: Object.keys(services)[0], stylist: "No preference", date: todayStr(0), time: "12:00" };
   const [form, setForm] = useState(emptyForm);
+  const [convertingWaitlistId, setConvertingWaitlistId] = useState(null);
   const [reviewDraft, setReviewDraft] = useState({});
 
   const [reportRange, setReportRange] = useState("today");
@@ -103,14 +104,32 @@ export default function Dashboard(props) {
     return counts.sort((a, b) => a.count - b.count)[0].name;
   };
 
-  const resetForm = () => { setForm(emptyForm); setEditingId(null); setFormError(""); setShowForm(false); };
+  const resetForm = () => { setForm(emptyForm); setEditingId(null); setConvertingWaitlistId(null); setFormError(""); setShowForm(false); };
 
-  const joinWaitlist = () => {
-    const entry = { id: Date.now(), clientName: form.client, service: form.service, stylist: form.stylist === "No preference" ? null : form.stylist, preferredDate: form.date };
+  const joinWaitlist = async () => {
+    const tempId = `temp-${Date.now()}`;
+    const entry = { id: tempId, clientName: form.client, service: form.service, stylist: form.stylist === "No preference" ? null : form.stylist, preferredDate: form.date };
+    const stylistId = stylists.find((s) => s.name === entry.stylist)?.id;
     setWaitlist((prev) => [...prev, entry]);
-    apiSend("/waitlist", "POST", { client_name: entry.clientName, service_id: services[entry.service]?.id, preferred_date: entry.preferredDate }, token).then((r) => { if (r?.error) notify(r.message, "error"); });
-    notify("Added to the waitlist. We'll reach out if a slot opens.");
     resetForm();
+    const result = await apiSend("/waitlist", "POST", { client_name: entry.clientName, service_id: services[entry.service]?.id, ...(stylistId ? { stylist_id: stylistId } : {}), preferred_date: entry.preferredDate }, token);
+    if (result?.error) {
+      setWaitlist((prev) => prev.filter((w) => w.id !== tempId));
+      notify(result.message, "error");
+      return;
+    }
+    // Swap in the real database id so "Remove" targets a row that exists server-side.
+    if (result?.id) setWaitlist((prev) => prev.map((w) => (w.id === tempId ? { ...entry, id: result.id } : w)));
+    notify("Added to the waitlist. We'll reach out if a slot opens.");
+  };
+
+  // "Convert" pre-fills the booking form from a waitlist entry; remember which entry
+  // so it can be removed once the appointment is actually saved.
+  const convertWaitlistEntry = (w) => {
+    setForm({ client: w.clientName, clientId: null, newClient: false, service: w.service, stylist: w.stylist || "No preference", date: w.preferredDate, time: "12:00" });
+    setConvertingWaitlistId(w.id);
+    setFormError("");
+    setShowForm(true);
   };
 
   const submitAppointmentRaw = async () => {
@@ -147,6 +166,7 @@ export default function Dashboard(props) {
       // target a row that actually exists server-side.
       if (result?.id) setAppointments((prev) => prev.map((a) => (a.id === tempId ? { ...newAppt, id: result.id } : a)));
       notify(isClientView ? "Appointment booked." : "Appointment added.");
+      if (convertingWaitlistId) removeWaitlistEntry(convertingWaitlistId);
     }
     setActiveTab("appointments");
     resetForm();
@@ -207,23 +227,23 @@ export default function Dashboard(props) {
     notify("Inventory item added.");
   };
 
-  const updateServicePrice = (name, price) => {
-    setServices((prev) => ({ ...prev, [name]: { ...prev[name], price: Number(price) || 0 } }));
-    const id = services[name]?.id;
-    if (id) apiSend(`/services/${id}`, "PATCH", { price: Number(price) || 0 }, token).then((r) => { if (r?.error) notify(r.message, "error"); });
+  // Saves one service field. The inputs call this on blur/Enter (not every keystroke), and if the
+  // server rejects the value the local copy is rolled back so the screen matches what is saved.
+  const patchService = async (name, localPatch, apiPatch) => {
+    const before = services[name];
+    setServices((prev) => ({ ...prev, [name]: { ...prev[name], ...localPatch } }));
+    if (!before?.id) return;
+    const result = await apiSend(`/services/${before.id}`, "PATCH", apiPatch, token);
+    if (result?.error) {
+      const restore = Object.fromEntries(Object.keys(localPatch).map((k) => [k, before[k]]));
+      setServices((prev) => ({ ...prev, [name]: { ...prev[name], ...restore } }));
+      notify(result.message, "error");
+    }
   };
 
-  const updateServiceDuration = (name, duration) => {
-    setServices((prev) => ({ ...prev, [name]: { ...prev[name], duration: Number(duration) || 5 } }));
-    const id = services[name]?.id;
-    if (id) apiSend(`/services/${id}`, "PATCH", { duration_minutes: Number(duration) || 5 }, token).then((r) => { if (r?.error) notify(r.message, "error"); });
-  };
-
-  const updateServicePhoto = (name, photoUrl) => {
-    setServices((prev) => ({ ...prev, [name]: { ...prev[name], photoUrl } }));
-    const id = services[name]?.id;
-    if (id) apiSend(`/services/${id}`, "PATCH", { photo_url: photoUrl || null }, token).then((r) => { if (r?.error) notify(r.message, "error"); });
-  };
+  const updateServicePrice = (name, price) => patchService(name, { price: Number(price) || 0 }, { price: Number(price) || 0 });
+  const updateServiceDuration = (name, duration) => patchService(name, { duration: Number(duration) || 5 }, { duration_minutes: Number(duration) || 5 });
+  const updateServicePhoto = (name, photoUrl) => patchService(name, { photoUrl }, { photo_url: photoUrl || null });
 
   const addServiceRaw = async () => {
     if (!newService.name.trim()) { notify("Enter a service name.", "error"); return; }
@@ -377,7 +397,7 @@ export default function Dashboard(props) {
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,
-    inventory, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
+    convertWaitlistEntry, inventory, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
     landingContent, leaderboard, moderateReview, myClientRecord, newClientsToday, newFaq,
     newItem, newService, newStylist, occupancyRate, overviewPreview, priceOf,
     removeFaq, removeWaitlistEntry, reportRange, resetForm, revenueByService, revenueTrend,
