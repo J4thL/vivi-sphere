@@ -30,6 +30,10 @@ class StylistController extends Controller
             'bio' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        // Employee logins are created by the admin only. A manager can still add a stylist profile
+        // (no email), but cannot hand out a login.
+        abort_if(! empty($data['email']) && ! $request->user()->isAdmin(), 403, 'Only an admin can create employee accounts.');
+
         // The stylist, their login and the audit entry are saved together: if the login can't be
         // created, there must not be a half-set-up stylist left behind.
         $stylist = DB::transaction(function () use ($request, $data) {

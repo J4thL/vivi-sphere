@@ -54,6 +54,17 @@ class AccountCreationTest extends TestCase
         $this->assertSame($stylist->id, $login->stylist_id);
     }
 
+    public function test_a_manager_cannot_create_an_employee_login_but_can_add_a_stylist_profile(): void
+    {
+        Sanctum::actingAs(User::create(['name' => 'Mgr', 'email' => 'mgr@t.test', 'password' => 'password', 'role' => 'manager']));
+
+        $this->postJson('/api/stylists', ['name' => 'Ana', 'role' => 'Colorist', 'email' => 'ana@t.test'])->assertForbidden();
+        $this->assertSame(0, User::where('email', 'ana@t.test')->count());
+        $this->assertSame(0, Stylist::where('name', 'Ana')->count());
+
+        $this->postJson('/api/stylists', ['name' => 'Ben', 'role' => 'Barber'])->assertCreated();
+    }
+
     public function test_a_failed_login_creation_leaves_no_orphan_stylist(): void
     {
         Sanctum::actingAs(User::create(['name' => 'Boss', 'email' => 'boss@t.test', 'password' => 'password', 'role' => 'admin']));
