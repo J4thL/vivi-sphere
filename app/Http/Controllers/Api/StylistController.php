@@ -53,7 +53,7 @@ class StylistController extends Controller
                     'password' => Hash::make($tempPassword),
                     'role' => 'stylist',
                     'stylist_id' => $stylist->id,
-                ]);
+                ])->forceFill(['must_change_password' => true])->save();
                 $stylist->temp_password = $tempPassword;
             }
 

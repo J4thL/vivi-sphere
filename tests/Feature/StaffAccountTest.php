@@ -123,4 +123,30 @@ class StaffAccountTest extends TestCase
     {
         $this->postJson('/api/auth/change-password', [])->assertUnauthorized();
     }
+
+    public function test_new_staff_must_replace_the_temporary_password_before_using_the_api(): void
+    {
+        $this->as('admin');
+        $temp = $this->postJson('/api/staff', ['name' => 'Mia', 'email' => 'mia@t.test', 'role' => 'manager'])->assertCreated()->json('temp_password');
+        $this->assertTrue((bool) User::where('email', 'mia@t.test')->value('must_change_password'));
+
+        $this->app['auth']->forgetGuards();
+        $login = $this->postJson('/api/auth/login', ['email' => 'mia@t.test', 'password' => $temp])->assertOk();
+        $this->assertTrue($login->json('user.must_change_password'));
+        $h = ['Authorization' => 'Bearer '.$login->json('token')];
+
+        $this->withHeaders($h)->getJson('/api/auth/me')->assertOk();
+        $this->withHeaders($h)->getJson('/api/clients')->assertForbidden()->assertJsonPath('code', 'password_change_required');
+
+        $this->withHeaders($h)->postJson('/api/auth/change-password', ['current_password' => $temp, 'password' => 'my-own-pass-1', 'password_confirmation' => 'my-own-pass-1'])
+            ->assertOk()->assertJsonPath('user.must_change_password', false);
+        $this->withHeaders($h)->getJson('/api/clients')->assertOk();
+    }
+
+    public function test_existing_users_are_not_forced_to_change_their_password(): void
+    {
+        User::create(['name' => 'Old', 'email' => 'old@t.test', 'password' => 'password', 'role' => 'manager']);
+        $token = $this->postJson('/api/auth/login', ['email' => 'old@t.test', 'password' => 'password'])->assertOk()->json('token');
+        $this->withHeaders(['Authorization' => "Bearer $token"])->getJson('/api/clients')->assertOk();
+    }
 }

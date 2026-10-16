@@ -75,6 +75,7 @@ class StaffController extends Controller
                 'role' => $data['role'],
                 'stylist_id' => $stylist?->id,
             ]);
+            $user->forceFill(['must_change_password' => true])->save();
 
             AuditLog::record($request->user(), 'staff.created', $user, ['role' => $data['role'], 'email' => $data['email']]);
 
