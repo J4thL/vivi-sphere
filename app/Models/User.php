@@ -29,6 +29,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'disabled_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -41,6 +42,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function client()
     {
         return $this->hasOne(Client::class);
+    }
+
+    public function isDisabled(): bool
+    {
+        return $this->disabled_at !== null;
     }
 
     public function isAdmin(): bool

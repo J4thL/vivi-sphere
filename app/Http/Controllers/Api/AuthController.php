@@ -78,12 +78,38 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 
+        // Checked after the password so this can't be used to probe which emails are disabled.
+        if ($user->isDisabled()) {
+            return response()->json(['message' => 'This account has been disabled. Please contact the salon admin.'], 403);
+        }
+
         $token = $user->createToken('web')->plainTextToken;
 
         return response()->json([
             'user' => $user->load('stylist'),
             'token' => $token,
         ]);
+    }
+
+    /** Any signed-in person can change their own password (staff use this to replace the temporary one). */
+    public function changePassword(Request $request)
+    {
+        $data = $request->validate([
+            'current_password' => ['required'],
+            'password' => ['required', 'confirmed', Password::min(8), 'different:current_password'],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            return response()->json(['message' => 'Your current password is incorrect.', 'errors' => ['current_password' => ['Your current password is incorrect.']]], 422);
+        }
+
+        $user->forceFill(['password' => Hash::make($data['password'])])->save();
+        // Sign out every other device; this one stays logged in.
+        $user->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id ?? 0)->delete();
+
+        return response()->json(['message' => 'Password updated.']);
     }
 
     public function logout(Request $request)

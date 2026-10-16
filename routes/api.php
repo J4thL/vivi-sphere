@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SalonSettingController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\StylistController;
 use App\Http\Controllers\Api\WaitlistController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword'])->middleware('throttle:password-reset');
 
     Route::middleware('throttle:bookings')->group(function () {
         Route::get('/appointments', [AppointmentController::class, 'index']);
@@ -65,6 +67,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/waitlist', [WaitlistController::class, 'index']);
     Route::post('/waitlist', [WaitlistController::class, 'store']);
     Route::delete('/waitlist/{waitlistEntry}', [WaitlistController::class, 'destroy']);
+
+    // Admin only (checked in the controller): create and list manager/stylist accounts.
+    Route::get('/staff', [StaffController::class, 'index']);
+    Route::post('/staff', [StaffController::class, 'store']);
+    Route::patch('/staff/{user}', [StaffController::class, 'setDisabled']);
 
     Route::get('/audit-log', [AuditLogController::class, 'index']);
 });
