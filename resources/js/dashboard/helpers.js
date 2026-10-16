@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, Globe, LayoutDashboard, Package, Scissors, Settings as SettingsIcon, ShieldCheck, Star, Users } from "lucide-react";
+import { BarChart3, CalendarDays, Globe, LayoutDashboard, Package, Scissors, Settings as SettingsIcon, ShieldCheck, Star, UserPlus, Users } from "lucide-react";
 
 /* -------------------------------- Constants -------------------------------- */
 
@@ -96,6 +96,7 @@ export const NAV_ITEMS = [
   { key: "inventory", label: "Inventory", icon: Package, roles: ["admin", "manager"], group: "Day to day" },
   { key: "reports", label: "Reports", icon: BarChart3, roles: ["admin", "manager"], group: "Insights" },
   { key: "reviews", label: "Reviews", icon: Star, roles: ["admin", "manager"], group: "Insights" },
+  { key: "staff", label: "Staff accounts", icon: UserPlus, roles: ["admin"], group: "Admin" },
   { key: "website", label: "Website", icon: Globe, roles: ["admin"], group: "Admin" },
   { key: "audit", label: "Audit log", icon: ShieldCheck, roles: ["admin"], group: "Admin" },
   { key: "settings", label: "Settings", icon: SettingsIcon, roles: ["admin", "manager", "stylist", "client"], group: "Admin" },

@@ -10,6 +10,7 @@ import OverviewTab from "./tabs/OverviewTab.jsx";
 import ReportsTab from "./tabs/ReportsTab.jsx";
 import ReviewsTab from "./tabs/ReviewsTab.jsx";
 import SettingsTab from "./tabs/SettingsTab.jsx";
+import StaffTab from "./tabs/StaffTab.jsx";
 import StylistsTab from "./tabs/StylistsTab.jsx";
 import WebsiteTab from "./tabs/WebsiteTab.jsx";
 import { serifFont, useBrand, useTheme } from "./theme.jsx";
@@ -506,6 +507,7 @@ export default function Dashboard(props) {
           {activeTab === "inventory" && isManagerView && <InventoryTab ctx={ctx} />}
           {activeTab === "reports" && isManagerView && <ReportsTab ctx={ctx} />}
           {activeTab === "reviews" && isManagerView && <ReviewsTab ctx={ctx} />}
+          {activeTab === "staff" && isAdmin && <StaffTab token={token} notify={notify} />}
           {activeTab === "website" && isAdmin && <WebsiteTab ctx={ctx} />}
           {activeTab === "audit" && isAdmin && <AuditTab ctx={ctx} />}
           {activeTab === "settings" && <SettingsTab ctx={ctx} />}
