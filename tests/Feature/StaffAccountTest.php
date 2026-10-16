@@ -25,7 +25,7 @@ class StaffAccountTest extends TestCase
     {
         $this->as('admin');
 
-        $res = $this->postJson('/api/staff', ['name' => 'Mia', 'email' => 'mia@t.test', 'role' => 'manager'])->assertCreated();
+        $res = $this->postJson('/api/staff', ['name' => 'Mia', 'email' => 'mia@t.test', 'role' => 'manager', 'branch_id' => 1])->assertCreated();
         $this->assertSame('manager', User::where('email', 'mia@t.test')->value('role'));
         $this->assertSame(0, Stylist::count());
         $this->assertSame(1, AuditLog::where('action', 'staff.created')->count());
@@ -38,9 +38,9 @@ class StaffAccountTest extends TestCase
     {
         $this->as('admin');
 
-        $this->postJson('/api/staff', ['name' => 'Ana', 'email' => 'ana@t.test', 'role' => 'stylist'])->assertStatus(422);
+        $this->postJson('/api/staff', ['name' => 'Ana', 'email' => 'ana@t.test', 'role' => 'stylist', 'branch_id' => 1])->assertStatus(422);
 
-        $this->postJson('/api/staff', ['name' => 'Ana', 'email' => 'ana@t.test', 'role' => 'stylist', 'title' => 'Colorist'])->assertCreated();
+        $this->postJson('/api/staff', ['name' => 'Ana', 'email' => 'ana@t.test', 'role' => 'stylist', 'title' => 'Colorist', 'branch_id' => 1])->assertCreated();
         $login = User::where('email', 'ana@t.test')->firstOrFail();
         $this->assertSame('Colorist', Stylist::findOrFail($login->stylist_id)->role);
     }
@@ -50,7 +50,7 @@ class StaffAccountTest extends TestCase
         $this->as('admin');
 
         $this->postJson('/api/staff', ['name' => 'X', 'email' => 'x@t.test', 'role' => 'admin'])->assertStatus(422);
-        $this->postJson('/api/staff', ['name' => 'X', 'email' => 'admin@t.test', 'role' => 'manager'])->assertStatus(422);
+        $this->postJson('/api/staff', ['name' => 'X', 'email' => 'admin@t.test', 'role' => 'manager', 'branch_id' => 1])->assertStatus(422);
     }
 
     public function test_non_admins_cannot_list_or_create_staff(): void
@@ -127,7 +127,7 @@ class StaffAccountTest extends TestCase
     public function test_new_staff_must_replace_the_temporary_password_before_using_the_api(): void
     {
         $this->as('admin');
-        $temp = $this->postJson('/api/staff', ['name' => 'Mia', 'email' => 'mia@t.test', 'role' => 'manager'])->assertCreated()->json('temp_password');
+        $temp = $this->postJson('/api/staff', ['name' => 'Mia', 'email' => 'mia@t.test', 'role' => 'manager', 'branch_id' => 1])->assertCreated()->json('temp_password');
         $this->assertTrue((bool) User::where('email', 'mia@t.test')->value('must_change_password'));
 
         $this->app['auth']->forgetGuards();

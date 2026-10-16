@@ -86,7 +86,7 @@ class AuthController extends Controller
         $token = $user->createToken('web')->plainTextToken;
 
         return response()->json([
-            'user' => $user->load('stylist'),
+            'user' => $user->load('stylist', 'branch'),
             'token' => $token,
         ]);
     }
@@ -121,6 +121,6 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user()->load('stylist'));
+        return response()->json($request->user()->load('stylist', 'branch'));
     }
 }

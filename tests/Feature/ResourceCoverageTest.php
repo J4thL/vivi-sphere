@@ -22,7 +22,7 @@ class ResourceCoverageTest extends TestCase
 
     private function as(string $role, array $extra = []): User
     {
-        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role] + $extra);
+        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role, 'branch_id' => in_array($role, ['manager', 'stylist']) ? 1 : null] + $extra);
         Sanctum::actingAs($user);
 
         return $user;
@@ -30,7 +30,7 @@ class ResourceCoverageTest extends TestCase
 
     private function stylist(string $name = 'Marisol', bool $active = true): Stylist
     {
-        return Stylist::create(['name' => $name, 'role' => 'Colorist', 'active' => $active]);
+        return Stylist::create(['name' => $name, 'role' => 'Colorist', 'active' => $active, 'branch_id' => 1]);
     }
 
     // ---- inventory -------------------------------------------------------------------

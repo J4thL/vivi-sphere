@@ -24,9 +24,9 @@ class StaffController extends Controller
         abort_unless($request->user()->isAdmin(), 403);
 
         return User::whereIn('role', ['manager', 'stylist'])
-            ->with('stylist:id,role')
+            ->with('stylist:id,role', 'branch:id,name')
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'role', 'stylist_id', 'disabled_at', 'created_at']);
+            ->get(['id', 'name', 'email', 'role', 'stylist_id', 'branch_id', 'disabled_at', 'created_at']);
     }
 
     /** Switch a staff login off (or back on). Nothing is deleted; a disabled person is signed out everywhere. */
@@ -58,6 +58,8 @@ class StaffController extends Controller
             'role' => ['required', Rule::in(['manager', 'stylist'])],
             // Job title shown on the public stylist profile (only used for stylists).
             'title' => ['nullable', 'required_if:role,stylist', 'string', 'max:255'],
+            // Every manager and stylist belongs to exactly one (active) branch.
+            'branch_id' => ['required', Rule::exists('branches', 'id')->where('active', true)],
         ]);
 
         $tempPassword = Str::random(10);
@@ -65,7 +67,7 @@ class StaffController extends Controller
         $user = DB::transaction(function () use ($request, $data, $tempPassword) {
             $stylist = null;
             if ($data['role'] === 'stylist') {
-                $stylist = Stylist::create(['name' => $data['name'], 'role' => $data['title'], 'active' => true]);
+                $stylist = Stylist::create(['name' => $data['name'], 'role' => $data['title'], 'active' => true, 'branch_id' => $data['branch_id']]);
             }
 
             $user = User::create([
@@ -74,16 +76,17 @@ class StaffController extends Controller
                 'password' => Hash::make($tempPassword),
                 'role' => $data['role'],
                 'stylist_id' => $stylist?->id,
+                'branch_id' => $data['branch_id'],
             ]);
             $user->forceFill(['must_change_password' => true])->save();
 
-            AuditLog::record($request->user(), 'staff.created', $user, ['role' => $data['role'], 'email' => $data['email']]);
+            AuditLog::record($request->user(), 'staff.created', $user, ['role' => $data['role'], 'email' => $data['email'], 'branch_id' => $data['branch_id']]);
 
             return $user;
         });
 
         return response()->json([
-            'user' => $user->only(['id', 'name', 'email', 'role', 'stylist_id']),
+            'user' => $user->only(['id', 'name', 'email', 'role', 'stylist_id', 'branch_id']),
             'temp_password' => $tempPassword,
         ], 201);
     }

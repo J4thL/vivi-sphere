@@ -18,6 +18,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'stylist_id',
+        'branch_id',
     ];
 
     protected $hidden = [
@@ -38,6 +39,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function stylist()
     {
         return $this->belongsTo(Stylist::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /** Admins reach every branch; everyone else only the one they belong to. */
+    public function canAccessBranch($branchId): bool
+    {
+        return $this->isAdmin() || ($this->branch_id !== null && (int) $this->branch_id === (int) $branchId);
     }
 
     public function client()

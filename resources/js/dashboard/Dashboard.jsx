@@ -10,6 +10,7 @@ import OverviewTab from "./tabs/OverviewTab.jsx";
 import ReportsTab from "./tabs/ReportsTab.jsx";
 import ReviewsTab from "./tabs/ReviewsTab.jsx";
 import SettingsTab from "./tabs/SettingsTab.jsx";
+import BranchesTab from "./tabs/BranchesTab.jsx";
 import StaffTab from "./tabs/StaffTab.jsx";
 import StylistsTab from "./tabs/StylistsTab.jsx";
 import WebsiteTab from "./tabs/WebsiteTab.jsx";
@@ -24,7 +25,7 @@ export default function Dashboard(props) {
     appointments, setAppointments, services, setServices, stylists, setStylists,
     inventory, setInventory, clients, reviews, setReviews,
     waitlist, setWaitlist, auditLog,
-    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged,
+    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged, branches, setBranches,
   } = props;
   const { colors } = useTheme();
   const role = user.role;
@@ -61,7 +62,7 @@ export default function Dashboard(props) {
   const [reviewDraft, setReviewDraft] = useState({});
 
   const [reportRange, setReportRange] = useState("today");
-  const [newStylist, setNewStylist] = useState({ name: "", role: "", email: "", photoUrl: "", bio: "" });
+  const [newStylist, setNewStylist] = useState({ name: "", role: "", email: "", photoUrl: "", bio: "", branchId: "" });
   const [createdLogin, setCreatedLogin] = useState(null); // {name, email, password} shown once after the admin creates an employee login
   const [newService, setNewService] = useState({ name: "", price: "", duration: "" });
   const [editingStylistId, setEditingStylistId] = useState(null);
@@ -192,12 +193,13 @@ export default function Dashboard(props) {
 
   const addStylistRaw = async () => {
     if (!newStylist.name.trim()) return;
+    if (isAdmin && !newStylist.branchId) { notify("Please choose a branch for this stylist.", "error"); return; }
     const tempId = `temp-${Date.now()}`;
-    const rec = { id: tempId, name: newStylist.name, role: newStylist.role || "Stylist", active: true, photoUrl: newStylist.photoUrl, bio: newStylist.bio };
+    const rec = { id: tempId, name: newStylist.name, role: newStylist.role || "Stylist", active: true, branchId: isAdmin ? Number(newStylist.branchId) : user.branch_id, photoUrl: newStylist.photoUrl, bio: newStylist.bio };
     setStylists((prev) => [...prev, rec]);
     const loginEmail = isAdmin ? newStylist.email.trim() : "";
-    setNewStylist({ name: "", role: "", email: "", photoUrl: "", bio: "" });
-    const result = await apiSend("/stylists", "POST", { name: rec.name, role: rec.role, email: loginEmail || null, photo_url: rec.photoUrl || null, bio: rec.bio || null }, token);
+    setNewStylist({ name: "", role: "", email: "", photoUrl: "", bio: "", branchId: "" });
+    const result = await apiSend("/stylists", "POST", { name: rec.name, role: rec.role, email: loginEmail || null, branch_id: isAdmin ? rec.branchId : null, photo_url: rec.photoUrl || null, bio: rec.bio || null }, token);
     if (result?.error) {
       setStylists((prev) => prev.filter((s) => s.id !== tempId));
       notify(result.message, "error");
@@ -397,7 +399,7 @@ export default function Dashboard(props) {
 
   // Everything the tab components need, in one place.
   const ctx = {
-    token, notify, onPasswordChanged, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
+    token, notify, onPasswordChanged, branches, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,
@@ -507,7 +509,8 @@ export default function Dashboard(props) {
           {activeTab === "inventory" && isManagerView && <InventoryTab ctx={ctx} />}
           {activeTab === "reports" && isManagerView && <ReportsTab ctx={ctx} />}
           {activeTab === "reviews" && isManagerView && <ReviewsTab ctx={ctx} />}
-          {activeTab === "staff" && isAdmin && <StaffTab token={token} notify={notify} askConfirm={askConfirm} />}
+          {activeTab === "branches" && isAdmin && <BranchesTab token={token} notify={notify} branches={branches} setBranches={setBranches} />}
+          {activeTab === "staff" && isAdmin && <StaffTab token={token} notify={notify} askConfirm={askConfirm} branches={branches} />}
           {activeTab === "website" && isAdmin && <WebsiteTab ctx={ctx} />}
           {activeTab === "audit" && isAdmin && <AuditTab ctx={ctx} />}
           {activeTab === "settings" && <SettingsTab ctx={ctx} />}
