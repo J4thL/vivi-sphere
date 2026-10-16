@@ -6,7 +6,7 @@ import { Field } from "../ui.jsx";
 const EMPTY = { name: "", email: "", role: "stylist", title: "" };
 
 /* Admin-only: create manager and stylist logins, and see who already has one. */
-export default function StaffTab({ token, notify }) {
+export default function StaffTab({ token, notify, askConfirm }) {
   const { colors } = useTheme();
   const [staff, setStaff] = useState(null);
   const [form, setForm] = useState(EMPTY);
@@ -34,6 +34,17 @@ export default function StaffTab({ token, notify }) {
     setForm(EMPTY);
     notify("Staff account created.");
     setReload((n) => n + 1);
+  };
+
+  const setDisabled = (u, disabled) => {
+    const run = async () => {
+      const r = await apiSend(`/staff/${u.id}`, "PATCH", { disabled }, token);
+      if (!r || r.error) { notify(r?.message || "Could not reach the server.", "error"); return; }
+      notify(disabled ? `${u.name} can no longer log in.` : `${u.name} can log in again.`);
+      setReload((n) => n + 1);
+    };
+    if (disabled) askConfirm(`Disable ${u.name}'s login? They'll be signed out everywhere. Nothing is deleted, and you can turn it back on.`, run, "Disable login");
+    else run();
   };
 
   return (
@@ -73,7 +84,10 @@ export default function StaffTab({ token, notify }) {
               <div className="font-medium truncate">{u.name}</div>
               <div className="dc-subtle text-xs truncate">{u.email}</div>
             </div>
-            <div className="dc-subtle text-xs capitalize flex-shrink-0">{u.role}{u.stylist?.role ? ` · ${u.stylist.role}` : ""}</div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="dc-subtle text-xs capitalize">{u.role}{u.stylist?.role ? ` · ${u.stylist.role}` : ""}{u.disabled_at ? " · disabled" : ""}</div>
+              <button type="button" onClick={() => setDisabled(u, !u.disabled_at)} className="text-xs font-medium underline" style={{ color: u.disabled_at ? colors.success : colors.danger }}>{u.disabled_at ? "Enable" : "Disable"}</button>
+            </div>
           </div>
         ))}
       </div>

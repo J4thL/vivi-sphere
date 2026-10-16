@@ -38,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']);
+    Route::post('/auth/change-password', [AuthController::class, 'changePassword'])->middleware('throttle:password-reset');
 
     Route::middleware('throttle:bookings')->group(function () {
         Route::get('/appointments', [AppointmentController::class, 'index']);
@@ -70,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin only (checked in the controller): create and list manager/stylist accounts.
     Route::get('/staff', [StaffController::class, 'index']);
     Route::post('/staff', [StaffController::class, 'store']);
+    Route::patch('/staff/{user}', [StaffController::class, 'setDisabled']);
 
     Route::get('/audit-log', [AuditLogController::class, 'index']);
 });

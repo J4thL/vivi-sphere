@@ -67,4 +67,60 @@ class StaffAccountTest extends TestCase
     {
         $this->postJson('/api/staff', [])->assertUnauthorized();
     }
+
+    public function test_a_disabled_staff_login_is_refused_signed_out_and_can_be_re_enabled(): void
+    {
+        $admin = $this->as('admin');
+        $staff = User::create(['name' => 'Mia', 'email' => 'mia@t.test', 'password' => 'password', 'role' => 'manager']);
+        $staff->createToken('web');
+
+        $this->patchJson("/api/staff/{$staff->id}", ['disabled' => true])->assertOk();
+        $this->assertNotNull($staff->fresh()->disabled_at);
+        $this->assertSame(0, $staff->tokens()->count());
+        $this->assertSame(1, AuditLog::where('action', 'staff.disabled')->count());
+
+        $this->postJson('/api/auth/login', ['email' => 'mia@t.test', 'password' => 'password'])->assertForbidden();
+        $this->postJson('/api/auth/login', ['email' => 'mia@t.test', 'password' => 'wrong-pass'])->assertUnauthorized();
+
+        $this->patchJson("/api/staff/{$staff->id}", ['disabled' => false])->assertOk();
+        $this->postJson('/api/auth/login', ['email' => 'mia@t.test', 'password' => 'password'])->assertOk();
+        $this->assertSame($admin->id, AuditLog::where('action', 'staff.enabled')->value('user_id'));
+    }
+
+    public function test_only_an_admin_can_disable_and_only_staff_accounts(): void
+    {
+        $client = User::create(['name' => 'C', 'email' => 'c@t.test', 'password' => 'password', 'role' => 'client']);
+        $admin = $this->as('admin');
+        $this->patchJson("/api/staff/{$client->id}", ['disabled' => true])->assertNotFound();
+        $this->patchJson("/api/staff/{$admin->id}", ['disabled' => true])->assertNotFound();
+
+        $mgr = $this->as('manager');
+        $victim = User::create(['name' => 'S', 'email' => 's@t.test', 'password' => 'password', 'role' => 'stylist']);
+        $this->patchJson("/api/staff/{$victim->id}", ['disabled' => true])->assertForbidden();
+        $this->assertNull($victim->fresh()->disabled_at);
+    }
+
+    public function test_changing_your_own_password(): void
+    {
+        $u = User::create(['name' => 'Mia', 'email' => 'mia@t.test', 'password' => 'temp-pass-1', 'role' => 'manager']);
+        $login = $this->postJson('/api/auth/login', ['email' => 'mia@t.test', 'password' => 'temp-pass-1'])->assertOk();
+        $other = $u->createToken('phone');
+        $headers = ['Authorization' => 'Bearer '.$login->json('token')];
+
+        $this->withHeaders($headers)->postJson('/api/auth/change-password', ['current_password' => 'nope', 'password' => 'brand-new-pw', 'password_confirmation' => 'brand-new-pw'])->assertStatus(422);
+        $this->withHeaders($headers)->postJson('/api/auth/change-password', ['current_password' => 'temp-pass-1', 'password' => 'short', 'password_confirmation' => 'short'])->assertStatus(422);
+        $this->withHeaders($headers)->postJson('/api/auth/change-password', ['current_password' => 'temp-pass-1', 'password' => 'brand-new-pw', 'password_confirmation' => 'other-pw-123'])->assertStatus(422);
+
+        $this->withHeaders($headers)->postJson('/api/auth/change-password', ['current_password' => 'temp-pass-1', 'password' => 'brand-new-pw', 'password_confirmation' => 'brand-new-pw'])->assertOk();
+
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $other->accessToken->id]);
+        $this->assertSame(1, $u->tokens()->count()); // this device stays signed in
+        $this->postJson('/api/auth/login', ['email' => 'mia@t.test', 'password' => 'temp-pass-1'])->assertUnauthorized();
+        $this->postJson('/api/auth/login', ['email' => 'mia@t.test', 'password' => 'brand-new-pw'])->assertOk();
+    }
+
+    public function test_change_password_needs_a_login(): void
+    {
+        $this->postJson('/api/auth/change-password', [])->assertUnauthorized();
+    }
 }

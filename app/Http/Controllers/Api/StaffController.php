@@ -26,7 +26,26 @@ class StaffController extends Controller
         return User::whereIn('role', ['manager', 'stylist'])
             ->with('stylist:id,role')
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'role', 'stylist_id', 'created_at']);
+            ->get(['id', 'name', 'email', 'role', 'stylist_id', 'disabled_at', 'created_at']);
+    }
+
+    /** Switch a staff login off (or back on). Nothing is deleted; a disabled person is signed out everywhere. */
+    public function setDisabled(Request $request, User $user)
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless(in_array($user->role, ['manager', 'stylist']), 404);
+
+        $data = $request->validate(['disabled' => ['required', 'boolean']]);
+
+        DB::transaction(function () use ($request, $user, $data) {
+            $user->forceFill(['disabled_at' => $data['disabled'] ? now() : null])->save();
+            if ($data['disabled']) {
+                $user->tokens()->delete();
+            }
+            AuditLog::record($request->user(), $data['disabled'] ? 'staff.disabled' : 'staff.enabled', $user, ['email' => $user->email]);
+        });
+
+        return response()->json($user->only(['id', 'name', 'email', 'role', 'disabled_at']));
     }
 
     public function store(Request $request)

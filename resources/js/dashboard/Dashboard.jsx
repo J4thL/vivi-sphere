@@ -397,7 +397,7 @@ export default function Dashboard(props) {
 
   // Everything the tab components need, in one place.
   const ctx = {
-    busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
+    token, notify, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,
@@ -507,7 +507,7 @@ export default function Dashboard(props) {
           {activeTab === "inventory" && isManagerView && <InventoryTab ctx={ctx} />}
           {activeTab === "reports" && isManagerView && <ReportsTab ctx={ctx} />}
           {activeTab === "reviews" && isManagerView && <ReviewsTab ctx={ctx} />}
-          {activeTab === "staff" && isAdmin && <StaffTab token={token} notify={notify} />}
+          {activeTab === "staff" && isAdmin && <StaffTab token={token} notify={notify} askConfirm={askConfirm} />}
           {activeTab === "website" && isAdmin && <WebsiteTab ctx={ctx} />}
           {activeTab === "audit" && isAdmin && <AuditTab ctx={ctx} />}
           {activeTab === "settings" && <SettingsTab ctx={ctx} />}
