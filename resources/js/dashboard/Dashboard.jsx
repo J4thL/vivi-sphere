@@ -24,7 +24,7 @@ export default function Dashboard(props) {
     appointments, setAppointments, services, setServices, stylists, setStylists,
     inventory, setInventory, clients, reviews, setReviews,
     waitlist, setWaitlist, auditLog,
-    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification,
+    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged,
   } = props;
   const { colors } = useTheme();
   const role = user.role;
@@ -397,7 +397,7 @@ export default function Dashboard(props) {
 
   // Everything the tab components need, in one place.
   const ctx = {
-    token, notify, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
+    token, notify, onPasswordChanged, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,

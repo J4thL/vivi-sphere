@@ -105,11 +105,11 @@ class AuthController extends Controller
             return response()->json(['message' => 'Your current password is incorrect.', 'errors' => ['current_password' => ['Your current password is incorrect.']]], 422);
         }
 
-        $user->forceFill(['password' => Hash::make($data['password'])])->save();
+        $user->forceFill(['password' => Hash::make($data['password']), 'must_change_password' => false])->save();
         // Sign out every other device; this one stays logged in.
         $user->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id ?? 0)->delete();
 
-        return response()->json(['message' => 'Password updated.']);
+        return response()->json(['message' => 'Password updated.', 'user' => $user->load('stylist')]);
     }
 
     public function logout(Request $request)

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import ChangePasswordCard from "./ChangePasswordCard.jsx";
 import Dashboard from "./Dashboard.jsx";
 import { GA_MEASUREMENT_ID, apiGet, apiSend, savedToken, setUnauthorizedHandler } from "./api.js";
 import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from "./AuthPages.jsx";
@@ -108,6 +109,7 @@ export default function App() {
       // Only ask for what this role may see; the API answers 403 otherwise.
       const isManager = user?.role === "admin" || user?.role === "manager";
       const skip = Promise.resolve(null);
+      if (user?.must_change_password) { setDashLoading(false); return; } // the API refuses everything until the temporary password is replaced
       const [a, c, i, al, w, rv] = await Promise.all([
         apiGet("/appointments", token),
         isManager || user?.role === "client" ? apiGet("/clients", token) : skip,
@@ -124,7 +126,7 @@ export default function App() {
       if (w) setWaitlist(w.map(normalizeWaitlistEntry));
       setDashLoading(false);
     })();
-  }, [token, user?.role]);
+  }, [token, user?.role, user?.must_change_password]);
 
   useEffect(() => {
     if (!GA_MEASUREMENT_ID || typeof document === "undefined") return;
@@ -220,8 +222,18 @@ export default function App() {
         landingContent={landingContent} saveLandingContent={saveLandingContent}
         notify={notify} notice={notice} askConfirm={askConfirm}
         resendVerification={resendVerification}
+        onPasswordChanged={(u) => u && setUser(u)}
       />
     );
+    if (user?.must_change_password) {
+      body = (
+        <div className="max-w-md mx-auto mt-10 px-4 flex flex-col gap-3">
+          {notice && <NotifyBanner notice={notice} />}
+          <ChangePasswordCard token={token} notify={notify} onChanged={(u) => u && setUser(u)} intro="You're signed in with a temporary password. Choose your own password to continue." />
+          <button onClick={handleLogout} className="dc-subtle text-xs underline self-start">Log out</button>
+        </div>
+      );
+    }
   }
 
   return (
