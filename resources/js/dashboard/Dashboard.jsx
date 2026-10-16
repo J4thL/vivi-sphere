@@ -60,7 +60,8 @@ export default function Dashboard(props) {
   const [reviewDraft, setReviewDraft] = useState({});
 
   const [reportRange, setReportRange] = useState("today");
-  const [newStylist, setNewStylist] = useState({ name: "", role: "", photoUrl: "", bio: "" });
+  const [newStylist, setNewStylist] = useState({ name: "", role: "", email: "", photoUrl: "", bio: "" });
+  const [createdLogin, setCreatedLogin] = useState(null); // {name, email, password} shown once after the admin creates an employee login
   const [newService, setNewService] = useState({ name: "", price: "", duration: "" });
   const [editingStylistId, setEditingStylistId] = useState(null);
   const [stylistEditDraft, setStylistEditDraft] = useState({});
@@ -193,14 +194,16 @@ export default function Dashboard(props) {
     const tempId = `temp-${Date.now()}`;
     const rec = { id: tempId, name: newStylist.name, role: newStylist.role || "Stylist", active: true, photoUrl: newStylist.photoUrl, bio: newStylist.bio };
     setStylists((prev) => [...prev, rec]);
-    setNewStylist({ name: "", role: "", photoUrl: "", bio: "" });
-    const result = await apiSend("/stylists", "POST", { name: rec.name, role: rec.role, photo_url: rec.photoUrl || null, bio: rec.bio || null }, token);
+    const loginEmail = isAdmin ? newStylist.email.trim() : "";
+    setNewStylist({ name: "", role: "", email: "", photoUrl: "", bio: "" });
+    const result = await apiSend("/stylists", "POST", { name: rec.name, role: rec.role, email: loginEmail || null, photo_url: rec.photoUrl || null, bio: rec.bio || null }, token);
     if (result?.error) {
       setStylists((prev) => prev.filter((s) => s.id !== tempId));
       notify(result.message, "error");
       return;
     }
     if (result?.id) setStylists((prev) => prev.map((s) => (s.id === tempId ? { ...rec, id: result.id } : s)));
+    if (result?.temp_password) setCreatedLogin({ name: rec.name, email: loginEmail, password: result.temp_password });
     notify("Stylist added.");
   };
 
@@ -393,7 +396,7 @@ export default function Dashboard(props) {
 
   // Everything the tab components need, in one place.
   const ctx = {
-    busy, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
+    busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,

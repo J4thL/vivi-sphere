@@ -5,7 +5,7 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function StylistsTab({ ctx }) {
   const { colors } = useTheme();
-  const { addStylist, busy, appointments, editingStylistId, leaderboard, newStylist, saveStylistEdit, setEditingStylistId, setNewStylist, setStylistEditDraft, startEditStylist, stylistEditDraft, stylists, toggleStylistActive } = ctx;
+  const { addStylist, busy, createdLogin, setCreatedLogin, isAdmin, appointments, editingStylistId, leaderboard, newStylist, saveStylistEdit, setEditingStylistId, setNewStylist, setStylistEditDraft, startEditStylist, stylistEditDraft, stylists, toggleStylistActive } = ctx;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid md:grid-cols-2 gap-4">
@@ -48,10 +48,21 @@ export default function StylistsTab({ ctx }) {
         })}
       </div>
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
-        <div className="font-display text-lg mb-4">Add a stylist</div>
+        <div className="font-display text-lg mb-1">Add a stylist</div>
+        {isAdmin && <div className="dc-subtle text-xs mb-4">Enter a login email to also create their employee account. They sign in with a temporary password you give them.</div>}
+        {createdLogin && (
+          <div role="status" style={{ background: colors.roseSoft, border: `1px solid ${colors.wine}` }} className="rounded-lg p-3 mb-4 text-sm">
+            <div className="font-medium">Account created for {createdLogin.name}</div>
+            <div>Email: <span className="font-mono">{createdLogin.email}</span></div>
+            <div>Temporary password: <span className="font-mono select-all">{createdLogin.password}</span></div>
+            <div className="dc-subtle text-xs mt-1">Shown only once. Share it privately, and ask them to change it after first login.</div>
+            <button onClick={() => setCreatedLogin(null)} className="dc-subtle text-xs mt-2 underline">Dismiss</button>
+          </div>
+        )}
         <div className="flex items-end gap-3 flex-wrap">
           <Field label="Name"><input value={newStylist.name} onChange={(e) => setNewStylist({ ...newStylist, name: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" placeholder="Full name" /></Field>
           <Field label="Title"><input value={newStylist.role} onChange={(e) => setNewStylist({ ...newStylist, role: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-36" placeholder="e.g. Colorist" /></Field>
+          {isAdmin && <Field label="Login email (optional)"><input type="email" value={newStylist.email} onChange={(e) => setNewStylist({ ...newStylist, email: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-52" placeholder="name@example.com" /></Field>}
           <Field label="Photo URL"><input value={newStylist.photoUrl} onChange={(e) => setNewStylist({ ...newStylist, photoUrl: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" placeholder="https://..." /></Field>
           <Field label="Bio"><input value={newStylist.bio} onChange={(e) => setNewStylist({ ...newStylist, bio: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-56" placeholder="Short bio for their profile" /></Field>
           <button onClick={addStylist} disabled={busy.stylist} className="btn-wine px-4 py-2 rounded-md text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">{busy.stylist ? "Adding…" : "Add stylist"}</button>
