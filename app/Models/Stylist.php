@@ -9,11 +9,16 @@ class Stylist extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'role', 'photo_url', 'bio', 'active'];
+    protected $fillable = ['name', 'role', 'photo_url', 'bio', 'active', 'branch_id'];
 
     protected function casts(): array
     {
         return ['active' => 'boolean'];
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function appointments()

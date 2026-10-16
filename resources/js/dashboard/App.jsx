@@ -28,6 +28,7 @@ export default function App() {
 
   const [screen, setScreen] = useState("login");
   const [user, setUser] = useState(null);
+  const [branches, setBranches] = useState([]);
   const [token, setToken] = useState(null);
   const tokenRef = useRef(null); // lets the 401 handler tell "my session expired" from "already logged out"
   // Set when a session expires. Requests still in flight then fail with their own
@@ -110,14 +111,16 @@ export default function App() {
       const isManager = user?.role === "admin" || user?.role === "manager";
       const skip = Promise.resolve(null);
       if (user?.must_change_password) { setDashLoading(false); return; } // the API refuses everything until the temporary password is replaced
-      const [a, c, i, al, w, rv] = await Promise.all([
+      const [a, c, i, al, w, rv, br] = await Promise.all([
         apiGet("/appointments", token),
         isManager || user?.role === "client" ? apiGet("/clients", token) : skip,
         isManager ? apiGet("/inventory", token) : skip,
         user?.role === "admin" ? apiGet("/audit-log", token) : skip,
         isManager ? apiGet("/waitlist", token) : skip,
         isManager ? apiGet("/reviews", token) : skip, // managers also see pending/rejected reviews
+        apiGet(user?.role === "admin" ? "/branches?include_inactive=1" : "/branches", token),
       ]);
+      if (br) setBranches(br);
       if (rv) setReviews(rv.map(normalizeReview));
       if (a) setAppointments(a.map(normalizeAppointment));
       if (c) setClients(c.map(normalizeClient));
@@ -223,6 +226,7 @@ export default function App() {
         notify={notify} notice={notice} askConfirm={askConfirm}
         resendVerification={resendVerification}
         onPasswordChanged={(u) => u && setUser(u)}
+        branches={branches} setBranches={setBranches}
       />
     );
     if (user?.must_change_password) {

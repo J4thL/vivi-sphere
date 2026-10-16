@@ -46,7 +46,7 @@ class AccountCreationTest extends TestCase
     {
         Sanctum::actingAs(User::create(['name' => 'Boss', 'email' => 'boss@t.test', 'password' => 'password', 'role' => 'admin']));
 
-        $res = $this->postJson('/api/stylists', ['name' => 'Ana', 'role' => 'Colorist', 'email' => 'ana@t.test'])->assertCreated();
+        $res = $this->postJson('/api/stylists', ['name' => 'Ana', 'role' => 'Colorist', 'email' => 'ana@t.test', 'branch_id' => 1])->assertCreated();
 
         $stylist = Stylist::findOrFail($res->json('id'));
         $login = User::where('email', 'ana@t.test')->firstOrFail();
@@ -56,7 +56,7 @@ class AccountCreationTest extends TestCase
 
     public function test_a_manager_cannot_create_an_employee_login_but_can_add_a_stylist_profile(): void
     {
-        Sanctum::actingAs(User::create(['name' => 'Mgr', 'email' => 'mgr@t.test', 'password' => 'password', 'role' => 'manager']));
+        Sanctum::actingAs(User::create(['name' => 'Mgr', 'email' => 'mgr@t.test', 'password' => 'password', 'role' => 'manager', 'branch_id' => 1]));
 
         $this->postJson('/api/stylists', ['name' => 'Ana', 'role' => 'Colorist', 'email' => 'ana@t.test'])->assertForbidden();
         $this->assertSame(0, User::where('email', 'ana@t.test')->count());
@@ -76,7 +76,7 @@ class AccountCreationTest extends TestCase
 
         $this->withoutExceptionHandling();
         try {
-            $this->postJson('/api/stylists', ['name' => 'Ana', 'role' => 'Colorist', 'email' => 'ana@t.test']);
+            $this->postJson('/api/stylists', ['name' => 'Ana', 'role' => 'Colorist', 'email' => 'ana@t.test', 'branch_id' => 1]);
             $this->fail('creation should have failed');
         } catch (\RuntimeException $e) {
             $this->assertSame('user table unavailable', $e->getMessage());

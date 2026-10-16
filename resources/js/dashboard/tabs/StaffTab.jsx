@@ -3,10 +3,15 @@ import { apiGet, apiSend } from "../api.js";
 import { useTheme } from "../theme.jsx";
 import { Field } from "../ui.jsx";
 
-const EMPTY = { name: "", email: "", role: "stylist", title: "" };
+const EMPTY = { name: "", email: "", role: "stylist", title: "", branchId: "" };
 
 /* Admin-only: create manager and stylist logins, and see who already has one. */
-export default function StaffTab({ token, notify, askConfirm }) {
+export default function StaffTab({ token, notify, askConfirm, branches }) {
+  const activeBranches = branches.filter((b) => b.active);
+  return <StaffTabInner token={token} notify={notify} askConfirm={askConfirm} branches={branches} activeBranches={activeBranches} />;
+}
+
+function StaffTabInner({ token, notify, askConfirm, branches, activeBranches }) {
   const { colors } = useTheme();
   const [staff, setStaff] = useState(null);
   const [form, setForm] = useState(EMPTY);
@@ -26,7 +31,7 @@ export default function StaffTab({ token, notify, askConfirm }) {
     e.preventDefault();
     if (saving) return;
     setSaving(true);
-    const body = { name: form.name.trim(), email: form.email.trim(), role: form.role, title: form.role === "stylist" ? form.title.trim() : null };
+    const body = { name: form.name.trim(), email: form.email.trim(), role: form.role, title: form.role === "stylist" ? form.title.trim() : null, branch_id: Number(form.branchId) };
     const result = await apiSend("/staff", "POST", body, token);
     setSaving(false);
     if (!result || result.error) { notify(result?.message || "Could not reach the server.", "error"); return; }
@@ -70,6 +75,12 @@ export default function StaffTab({ token, notify, askConfirm }) {
               <option value="manager">Manager</option>
             </select>
           </Field>
+          <Field label="Branch">
+            <select required value={form.branchId} onChange={(e) => setForm({ ...form, branchId: e.target.value })} style={input} className="px-2 py-1.5 rounded-md text-sm">
+              <option value="">Choose…</option>
+              {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </Field>
           {form.role === "stylist" && <Field label="Job title"><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} style={input} className="px-2 py-1.5 rounded-md text-sm w-40" placeholder="e.g. Colorist" /></Field>}
           <button type="submit" disabled={saving} className="btn-wine px-4 py-2 rounded-md text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">{saving ? "Creating…" : "Create account"}</button>
         </div>
@@ -85,7 +96,7 @@ export default function StaffTab({ token, notify, askConfirm }) {
               <div className="dc-subtle text-xs truncate">{u.email}</div>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="dc-subtle text-xs capitalize">{u.role}{u.stylist?.role ? ` · ${u.stylist.role}` : ""}{u.disabled_at ? " · disabled" : ""}</div>
+              <div className="dc-subtle text-xs capitalize">{u.role}{u.stylist?.role ? ` · ${u.stylist.role}` : ""}{branches.find((b) => b.id === u.branch_id) ? ` · ${branches.find((b) => b.id === u.branch_id).name}` : ""}{u.disabled_at ? " · disabled" : ""}</div>
               <button type="button" onClick={() => setDisabled(u, !u.disabled_at)} className="text-xs font-medium underline" style={{ color: u.disabled_at ? colors.success : colors.danger }}>{u.disabled_at ? "Enable" : "Disable"}</button>
             </div>
           </div>

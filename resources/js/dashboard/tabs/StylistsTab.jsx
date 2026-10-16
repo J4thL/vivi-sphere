@@ -5,11 +5,14 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function StylistsTab({ ctx }) {
   const { colors } = useTheme();
-  const { addStylist, busy, createdLogin, setCreatedLogin, isAdmin, appointments, editingStylistId, leaderboard, newStylist, saveStylistEdit, setEditingStylistId, setNewStylist, setStylistEditDraft, startEditStylist, stylistEditDraft, stylists, toggleStylistActive } = ctx;
+  const { addStylist, branches, user, busy, createdLogin, setCreatedLogin, isAdmin, appointments, editingStylistId, leaderboard, newStylist, saveStylistEdit, setEditingStylistId, setNewStylist, setStylistEditDraft, startEditStylist, stylistEditDraft, stylists, toggleStylistActive } = ctx;
+  const branchName = (id) => branches.find((b) => b.id === id)?.name;
+  // A manager only works with their own branch's stylists; an admin sees everyone.
+  const visibleStylists = isAdmin ? stylists : stylists.filter((s) => s.branchId === user.branch_id);
   return (
     <div className="flex flex-col gap-4">
       <div className="grid md:grid-cols-2 gap-4">
-        {stylists.map((s) => {
+        {visibleStylists.map((s) => {
           const stats = leaderboard.find((l) => l.id === s.id) || { total: 0 };
           const count = appointments.filter((a) => a.stylist === s.name && a.status !== "cancelled").length;
           const isEditing = editingStylistId === s.id;
@@ -33,7 +36,7 @@ export default function StylistsTab({ ctx }) {
                 {s.photoUrl ? <img src={s.photoUrl} alt={s.name} className="w-11 h-11 rounded-full object-cover flex-shrink-0" /> : <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-11 h-11 rounded-full flex items-center justify-center font-medium flex-shrink-0">{initials(s.name)}</div>}
                 <div className="min-w-0">
                   <div className="font-medium truncate">{s.name}</div>
-                  <div className="dc-subtle text-xs truncate">{s.role} · {count} booked · ${stats.total} earned</div>
+                  <div className="dc-subtle text-xs truncate">{s.role}{isAdmin && branchName(s.branchId) ? ` · ${branchName(s.branchId)}` : ""} · {count} booked · ${stats.total} earned</div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
@@ -61,6 +64,14 @@ export default function StylistsTab({ ctx }) {
         )}
         <div className="flex items-end gap-3 flex-wrap">
           <Field label="Name"><input value={newStylist.name} onChange={(e) => setNewStylist({ ...newStylist, name: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" placeholder="Full name" /></Field>
+          {isAdmin && (
+            <Field label="Branch">
+              <select value={newStylist.branchId} onChange={(e) => setNewStylist({ ...newStylist, branchId: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-40">
+                <option value="">Choose…</option>
+                {branches.filter((b) => b.active).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </Field>
+          )}
           <Field label="Title"><input value={newStylist.role} onChange={(e) => setNewStylist({ ...newStylist, role: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-36" placeholder="e.g. Colorist" /></Field>
           {isAdmin && <Field label="Login email (optional)"><input type="email" value={newStylist.email} onChange={(e) => setNewStylist({ ...newStylist, email: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-52" placeholder="name@example.com" /></Field>}
           <Field label="Photo URL"><input value={newStylist.photoUrl} onChange={(e) => setNewStylist({ ...newStylist, photoUrl: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" placeholder="https://..." /></Field>

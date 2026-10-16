@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\InventoryController;
@@ -27,6 +28,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/settings', [SalonSettingController::class, 'show']);
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/stylists', [StylistController::class, 'index']);
+Route::get('/branches', [BranchController::class, 'index']);
 Route::get('/reviews', [ReviewController::class, 'index']);
 
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:register');
@@ -69,6 +71,9 @@ Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
     Route::delete('/waitlist/{waitlistEntry}', [WaitlistController::class, 'destroy']);
 
     // Admin only (checked in the controller): create and list manager/stylist accounts.
+    Route::post('/branches', [BranchController::class, 'store']);
+    Route::patch('/branches/{branch}', [BranchController::class, 'update']);
+
     Route::get('/staff', [StaffController::class, 'index']);
     Route::post('/staff', [StaffController::class, 'store']);
     Route::patch('/staff/{user}', [StaffController::class, 'setDisabled']);
