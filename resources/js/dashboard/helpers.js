@@ -137,6 +137,7 @@ export function normalizeAppointment(a) {
     price: a.price != null ? Number(a.price) : null,
     // Length booked; older rows have none and use the service's current length.
     duration: a.duration_minutes != null ? Number(a.duration_minutes) : null,
+    branchId: a.branch_id ?? a.branchId ?? null,
   };
 }
 
@@ -194,6 +195,7 @@ export function normalizeWaitlistEntry(w) {
     service: w.service?.name ?? w.service,
     stylist: w.stylist?.name ?? w.stylist ?? null,
     preferredDate: String(w.preferred_date ?? w.preferredDate).slice(0, 10),
+    branchId: w.branch_id ?? w.branchId ?? null,
   };
 }
 

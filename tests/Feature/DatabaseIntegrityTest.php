@@ -29,7 +29,7 @@ class DatabaseIntegrityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->stylist = Stylist::create(['name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
+        $this->stylist = Stylist::create(['branch_id' => 1, 'name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
         $this->service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 60]);
         $this->client = Client::create(['name' => 'Cleo']);
         $this->day = now()->addDays(3)->format('Y-m-d');
@@ -37,7 +37,7 @@ class DatabaseIntegrityTest extends TestCase
 
     private function appt(string $time, array $extra = []): Appointment
     {
-        return Appointment::create($extra + [
+        return Appointment::create($extra + ['branch_id' => 1, 
             'client_id' => $this->client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id,
             'scheduled_at' => "{$this->day} $time", 'status' => 'confirmed', 'price' => 50,
         ]);
@@ -45,7 +45,7 @@ class DatabaseIntegrityTest extends TestCase
 
     private function manager(): void
     {
-        Sanctum::actingAs(User::create(['name' => 'M', 'email' => 'm@t.test', 'password' => 'password', 'role' => 'manager']));
+        Sanctum::actingAs(User::create(['name' => 'M', 'email' => 'm@t.test', 'password' => 'password', 'role' => 'manager', 'branch_id' => 1]));
     }
 
     // ---- database constraints ---------------------------------------------------------------

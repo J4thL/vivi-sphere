@@ -26,13 +26,13 @@ class ListBoundsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->stylist = Stylist::create(['name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
+        $this->stylist = Stylist::create(['branch_id' => 1, 'name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
         $this->service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 60]);
     }
 
     private function as(string $role): User
     {
-        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role]);
+        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role, 'branch_id' => in_array($role, ['manager', 'stylist']) ? 1 : null]);
         Sanctum::actingAs($user);
 
         return $user;
@@ -40,7 +40,7 @@ class ListBoundsTest extends TestCase
 
     private function appt(Client $client, string $when): Appointment
     {
-        return Appointment::create(['client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => $when, 'status' => 'completed', 'price' => 50]);
+        return Appointment::create(['branch_id' => 1, 'client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => $when, 'status' => 'completed', 'price' => 50]);
     }
 
     public function test_staff_appointment_lists_start_a_limited_time_back_but_always_include_the_future(): void
@@ -100,7 +100,7 @@ class ListBoundsTest extends TestCase
         foreach (range(1, 3) as $i) {
             $appt = $this->appt($c, "2026-09-0$i 10:00:00");
             Review::create(['appointment_id' => $appt->id, 'client_id' => $c->id, 'stylist_id' => $this->stylist->id, 'rating' => 5, 'status' => 'approved']);
-            WaitlistEntry::create(['client_name' => "W$i", 'service_id' => $this->service->id, 'preferred_date' => '2026-12-0'.$i, 'status' => 'waiting']);
+            WaitlistEntry::create(['branch_id' => 1, 'client_name' => "W$i", 'service_id' => $this->service->id, 'preferred_date' => '2026-12-0'.$i, 'status' => 'waiting']);
         }
 
         $this->getJson('/api/reviews')->assertOk()->assertJsonCount(1); // public, approved

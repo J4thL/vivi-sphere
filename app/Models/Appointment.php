@@ -10,7 +10,7 @@ class Appointment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'client_id', 'stylist_id', 'service_id', 'duration_minutes', 'scheduled_at', 'status', 'price',
+        'client_id', 'stylist_id', 'service_id', 'branch_id', 'duration_minutes', 'scheduled_at', 'status', 'price',
     ];
 
     protected function casts(): array
@@ -30,6 +30,11 @@ class Appointment extends Model
     public function minutes(): int
     {
         return (int) ($this->duration_minutes ?? $this->service->duration_minutes ?? 45);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function client()

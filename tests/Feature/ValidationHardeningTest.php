@@ -27,13 +27,13 @@ class ValidationHardeningTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->stylist = Stylist::create(['name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
+        $this->stylist = Stylist::create(['branch_id' => 1, 'name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
         $this->service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 60]);
     }
 
     private function as(string $role, array $extra = []): User
     {
-        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role] + $extra);
+        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role, 'branch_id' => in_array($role, ['manager', 'stylist']) ? 1 : null] + $extra);
         Sanctum::actingAs($user);
 
         return $user;
@@ -138,7 +138,7 @@ class ValidationHardeningTest extends TestCase
     {
         $client = Client::create(['name' => $user->name, 'user_id' => $user->id]);
 
-        return Appointment::create([
+        return Appointment::create(['branch_id' => 1, 
             'client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id,
             'scheduled_at' => now()->subDay()->format('Y-m-d').' 10:00:00', 'status' => 'completed', 'price' => 50,
         ]);
@@ -167,10 +167,10 @@ class ValidationHardeningTest extends TestCase
     public function test_appointments_cannot_be_reassigned_to_an_inactive_stylist(): void
     {
         $this->as('manager');
-        $gone = Stylist::create(['name' => 'Left', 'role' => 'Barber', 'active' => false]);
+        $gone = Stylist::create(['branch_id' => 1, 'name' => 'Left', 'role' => 'Barber', 'active' => false]);
         $client = Client::create(['name' => 'C']);
         $day = now()->addDays(2)->format('Y-m-d');
-        $appt = Appointment::create(['client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => "$day 10:00:00", 'status' => 'confirmed', 'price' => 50]);
+        $appt = Appointment::create(['branch_id' => 1, 'client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => "$day 10:00:00", 'status' => 'confirmed', 'price' => 50]);
 
         $this->patchJson("/api/appointments/{$appt->id}", ['stylist_id' => $gone->id])->assertStatus(422)->assertJsonValidationErrors('stylist_id');
         $this->assertSame($this->stylist->id, $appt->fresh()->stylist_id);
@@ -181,7 +181,7 @@ class ValidationHardeningTest extends TestCase
         $this->as('manager');
         $client = Client::create(['name' => 'C']);
         $day = now()->addDays(2)->format('Y-m-d');
-        $appt = Appointment::create(['client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => "$day 10:00:00", 'status' => 'confirmed', 'price' => 50]);
+        $appt = Appointment::create(['branch_id' => 1, 'client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => "$day 10:00:00", 'status' => 'confirmed', 'price' => 50]);
         $this->stylist->update(['active' => false]);
 
         // The dashboard sends the unchanged stylist_id along with a status change.
@@ -193,7 +193,7 @@ class ValidationHardeningTest extends TestCase
         $this->as('manager');
         $client = Client::create(['name' => 'C']);
         $day = now()->addDays(2)->format('Y-m-d');
-        $appt = Appointment::create(['client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => "$day 10:00:00", 'status' => 'confirmed', 'price' => 35]);
+        $appt = Appointment::create(['branch_id' => 1, 'client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => "$day 10:00:00", 'status' => 'confirmed', 'price' => 35]);
 
         $this->patchJson("/api/appointments/{$appt->id}", ['service_id' => $this->service->id, 'scheduled_at' => "$day 10:00:00", 'status' => 'completed'])->assertOk();
         $this->assertSame('35.00', (string) $appt->fresh()->price, 'the price agreed at booking time must survive');

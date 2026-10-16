@@ -30,7 +30,7 @@ class TimeHandlingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->stylist = Stylist::create(['name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
+        $this->stylist = Stylist::create(['branch_id' => 1, 'name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
         $this->service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 60]);
         $this->admin = User::create(['name' => 'Admin', 'email' => 'admin@t.test', 'password' => 'password', 'role' => 'admin']);
         Sanctum::actingAs($this->admin);
@@ -58,7 +58,7 @@ class TimeHandlingTest extends TestCase
         // The dashboard splits this on a space. An ISO string ("...T10:00:00.000000Z") made every
         // appointment match no day at all, so the schedule, today's revenue and the chart were empty.
         $client = Client::create(['name' => 'C']);
-        Appointment::create(['client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => '2026-10-12 10:00:00', 'status' => 'confirmed', 'price' => 50]);
+        Appointment::create(['branch_id' => 1, 'client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => '2026-10-12 10:00:00', 'status' => 'confirmed', 'price' => 50]);
 
         $this->getJson('/api/appointments')->assertOk()->assertJsonPath('0.scheduled_at', '2026-10-12 10:00:00');
     }
@@ -112,7 +112,7 @@ class TimeHandlingTest extends TestCase
     {
         $this->travelTo(Carbon::parse('2026-10-12 07:00:00', 'UTC')); // 15:00 in Davao
         $client = Client::create(['name' => 'C']);
-        $appt = Appointment::create(['client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => '2026-10-12 16:00:00', 'status' => 'confirmed', 'price' => 50]);
+        $appt = Appointment::create(['branch_id' => 1, 'client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id, 'scheduled_at' => '2026-10-12 16:00:00', 'status' => 'confirmed', 'price' => 50]);
 
         $this->patchJson("/api/appointments/{$appt->id}", ['scheduled_at' => '2026-10-12 11:00:00'])->assertStatus(422);
         $this->patchJson("/api/appointments/{$appt->id}", ['scheduled_at' => '2026-10-12 17:00:00'])->assertOk();

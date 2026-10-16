@@ -20,7 +20,7 @@ class Tier2PerformanceTest extends TestCase
 
     private function appt(Client $c, Stylist $s, Service $svc, string $when, string $status = 'confirmed'): Appointment
     {
-        return Appointment::create([
+        return Appointment::create(['branch_id' => 1, 
             'client_id' => $c->id, 'stylist_id' => $s->id, 'service_id' => $svc->id,
             'scheduled_at' => $when, 'status' => $status, 'price' => 50,
         ]);
@@ -30,7 +30,7 @@ class Tier2PerformanceTest extends TestCase
     {
         return [
             Client::create(['name' => 'C']),
-            Stylist::create(['name' => 'S', 'role' => 'Stylist', 'active' => true]),
+            Stylist::create(['branch_id' => 1, 'name' => 'S', 'role' => 'Stylist', 'active' => true]),
             Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 60]),
         ];
     }
@@ -72,7 +72,7 @@ class Tier2PerformanceTest extends TestCase
         $this->appt($client, $stylist, $service, '2026-10-10 23:30:00'); // late in the day: must be included for that day
         $this->appt($client, $stylist, $service, '2026-10-10 09:00:00');
         $this->appt($client, $stylist, $service, '2026-10-20 09:00:00');
-        Sanctum::actingAs(User::factory()->create(['role' => 'manager']));
+        Sanctum::actingAs(User::factory()->create(['role' => 'manager', 'branch_id' => 1]));
 
         $this->getJson('/api/appointments')->assertOk()->assertJsonCount(4);
         $this->getJson('/api/appointments?date=2026-10-10')->assertOk()->assertJsonCount(2);

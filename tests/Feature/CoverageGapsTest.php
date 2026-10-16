@@ -29,15 +29,15 @@ class CoverageGapsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->ana = Stylist::create(['name' => 'Ana', 'role' => 'Colorist', 'active' => true]);
-        $this->ben = Stylist::create(['name' => 'Ben', 'role' => 'Barber', 'active' => true]);
+        $this->ana = Stylist::create(['branch_id' => 1, 'name' => 'Ana', 'role' => 'Colorist', 'active' => true]);
+        $this->ben = Stylist::create(['branch_id' => 1, 'name' => 'Ben', 'role' => 'Barber', 'active' => true]);
         $this->service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 60]);
         $this->day = now()->addDays(3)->format('Y-m-d');
     }
 
     private function as(string $role, array $extra = []): User
     {
-        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role] + $extra);
+        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role, 'branch_id' => in_array($role, ['manager', 'stylist']) ? 1 : null] + $extra);
         Sanctum::actingAs($user);
 
         return $user;
@@ -45,7 +45,7 @@ class CoverageGapsTest extends TestCase
 
     private function appt(Stylist $stylist, string $time, ?Client $client = null): Appointment
     {
-        return Appointment::create([
+        return Appointment::create(['branch_id' => 1, 
             'client_id' => ($client ?? Client::create(['name' => 'C'.uniqid()]))->id, 'stylist_id' => $stylist->id,
             'service_id' => $this->service->id, 'scheduled_at' => "{$this->day} $time", 'status' => 'confirmed', 'price' => 50,
         ]);
@@ -104,7 +104,7 @@ class CoverageGapsTest extends TestCase
     public function test_removing_a_waitlist_entry_keeps_the_record(): void
     {
         $this->as('manager');
-        $entry = WaitlistEntry::create(['client_name' => 'Wanda', 'service_id' => $this->service->id, 'preferred_date' => $this->day, 'status' => 'waiting']);
+        $entry = WaitlistEntry::create(['branch_id' => 1, 'client_name' => 'Wanda', 'service_id' => $this->service->id, 'preferred_date' => $this->day, 'status' => 'waiting']);
 
         $this->deleteJson("/api/waitlist/{$entry->id}")->assertOk();
 
