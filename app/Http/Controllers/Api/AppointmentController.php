@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\AuditLog;
+use App\Models\Branch;
 use App\Models\Client;
 use App\Models\SalonSetting;
 use App\Models\Service;
@@ -43,6 +44,12 @@ class AppointmentController extends Controller
             $query->where('stylist_id', $user->stylist_id);
         } elseif ($user->isClient()) {
             $query->whereHas('client', fn ($q) => $q->where('user_id', $user->id));
+        } elseif (! $user->isAdmin()) {
+            // A manager sees only their own branch.
+            $query->where('branch_id', $user->branch_id);
+        } elseif ($request->filled('branch_id')) {
+            // An admin sees every branch, or one when asked.
+            $query->where('branch_id', (int) $request->query('branch_id'));
         }
 
         // A malformed date used to reach Carbon::parse() and surface as a 500.
@@ -102,12 +109,12 @@ class AppointmentController extends Controller
             });
     }
 
-    /** Blocks bookings outside the salon's configured open/close hours. */
-    private function withinBusinessHours(Carbon $start, int $durationMinutes): bool
+    /** Blocks bookings outside the branch's open/close hours (the salon-wide hours if a stylist has no branch). */
+    private function withinBusinessHours(Carbon $start, int $durationMinutes, ?Branch $branch = null): bool
     {
-        $settings = SalonSetting::current();
-        $open = Carbon::parse($start->toDateString().' '.$settings->open_time);
-        $close = Carbon::parse($start->toDateString().' '.$settings->close_time);
+        $hours = $branch ?? SalonSetting::current();
+        $open = Carbon::parse($start->toDateString().' '.$hours->open_time);
+        $close = Carbon::parse($start->toDateString().' '.$hours->close_time);
 
         return $start->gte($open) && $start->copy()->addMinutes($durationMinutes)->lte($close);
     }
@@ -142,6 +149,17 @@ class AppointmentController extends Controller
         $service = Service::findOrFail($data['service_id']);
         $start = Carbon::parse($data['scheduled_at']);
 
+        // The appointment belongs to its stylist's branch. Staff can only book in their own branch;
+        // clients and the admin can book in any open one.
+        $stylist = Stylist::findOrFail($data['stylist_id']);
+        $branch = $stylist->branch_id ? Branch::find($stylist->branch_id) : null;
+        if ($user->isManager() && ! $user->isAdmin() || $user->isStylist()) {
+            abort_unless($user->canAccessBranch($stylist->branch_id), 403, 'You can only book appointments in your own branch.');
+        }
+        if ($branch && ! $branch->active) {
+            throw ValidationException::withMessages(['stylist_id' => 'That branch is not taking bookings right now.']);
+        }
+
         // Two different people can share a name, so a typed name alone must never be assumed to be
         // an existing client (that silently merged their visit history and spend). Staff either pick
         // the existing client (client_id) or say explicitly that this is a new person (new_client).
@@ -151,15 +169,15 @@ class AppointmentController extends Controller
         }
 
         $this->assertNotInPast($start);
-        if (! $this->withinBusinessHours($start, $service->duration_minutes)) {
-            throw ValidationException::withMessages(['scheduled_at' => 'That time is outside the salon\'s open hours.']);
+        if (! $this->withinBusinessHours($start, $service->duration_minutes, $branch)) {
+            throw ValidationException::withMessages(['scheduled_at' => 'That time is outside this branch\'s open hours.']);
         }
 
         // Check-then-insert must not interleave with another booking for the same stylist, or two
         // simultaneous requests could both see a free slot. Locking the stylist's row makes the
         // second request wait until the first has committed, then see its appointment. The client
         // record, the appointment and the audit entry are saved together or not at all.
-        $appointment = DB::transaction(function () use ($user, $data, $service, $start) {
+        $appointment = DB::transaction(function () use ($user, $data, $service, $start, $stylist) {
             $this->lockStylist((int) $data['stylist_id']);
 
             if ($this->slotOverlaps((int) $data['stylist_id'], $start, $service->duration_minutes)) {
@@ -177,6 +195,7 @@ class AppointmentController extends Controller
             $appointment = Appointment::create([
                 'client_id' => $client->id,
                 'stylist_id' => $data['stylist_id'],
+                'branch_id' => $stylist->branch_id,
                 'service_id' => $service->id,
                 'duration_minutes' => $service->duration_minutes,
                 'scheduled_at' => $data['scheduled_at'],
@@ -221,6 +240,10 @@ class AppointmentController extends Controller
         if ($user->isClient() && $appointment->client->user_id !== $user->id) {
             abort(403);
         }
+        // A manager only works with their own branch's appointments.
+        if ($user->isManager() && ! $user->canAccessBranch($appointment->branch_id)) {
+            abort(403);
+        }
 
         $data = $request->validate([
             'status' => ['sometimes', 'in:confirmed,in-progress,completed,cancelled'],
@@ -253,6 +276,12 @@ class AppointmentController extends Controller
         if (isset($data['stylist_id']) && (int) $data['stylist_id'] !== (int) $appointment->stylist_id
             && ! Stylist::whereKey($data['stylist_id'])->where('active', true)->exists()) {
             throw ValidationException::withMessages(['stylist_id' => 'That stylist is not active, so appointments can\'t be assigned to them.']);
+        }
+
+        // Moving an appointment to another stylist can't move it to another branch.
+        if (isset($data['stylist_id']) && (int) $data['stylist_id'] !== (int) $appointment->stylist_id && $appointment->branch_id !== null
+            && (int) Stylist::whereKey($data['stylist_id'])->value('branch_id') !== (int) $appointment->branch_id) {
+            throw ValidationException::withMessages(['stylist_id' => 'That stylist works at a different branch.']);
         }
 
         $newService = isset($data['service_id']) ? Service::findOrFail($data['service_id']) : $appointment->service;
@@ -294,8 +323,8 @@ class AppointmentController extends Controller
                 if (isset($data['scheduled_at'])) {
                     $this->assertNotInPast($newStart);
                 }
-                if ($movingTime && ! $this->withinBusinessHours($newStart, $duration)) {
-                    throw ValidationException::withMessages(['scheduled_at' => 'That time is outside the salon\'s open hours.']);
+                if ($movingTime && ! $this->withinBusinessHours($newStart, $duration, $appointment->branch_id ? Branch::find($appointment->branch_id) : null)) {
+                    throw ValidationException::withMessages(['scheduled_at' => 'That time is outside this branch\'s open hours.']);
                 }
 
                 $this->lockStylist((int) $newStylistId);

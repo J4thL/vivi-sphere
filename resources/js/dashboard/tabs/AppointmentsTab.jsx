@@ -5,7 +5,7 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function AppointmentsTab({ ctx }) {
   const { colors } = useTheme();
-  const { advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
+  const { activeBranches, branches, lockedBranchId, formBranch, user, isAdmin, advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
   return (
     <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
       {(isManagerView || isStylistView) && (
@@ -21,7 +21,7 @@ export default function AppointmentsTab({ ctx }) {
           {isManagerView && (
             <select aria-label="Filter by stylist" value={stylistFilter} onChange={(e) => setStylistFilter(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-3 py-2 rounded-lg">
               <option>All</option>
-              {stylists.map((s) => <option key={s.id}>{s.name}</option>)}
+              {stylists.filter((s) => isAdmin || s.branchId === user.branch_id).map((s) => <option key={s.id}>{s.name}</option>)}
             </select>
           )}
           {["all", "confirmed", "in-progress", "completed", "cancelled"].map((s) => (
@@ -69,10 +69,18 @@ export default function AppointmentsTab({ ctx }) {
                 {Object.keys(services).map((s) => <option key={s} value={s}>{s} ({services[s].duration}m)</option>)}
               </select>
             </Field>
+            {lockedBranchId == null && activeBranches.length > 1 && (
+              <Field label="Branch">
+                <select value={form.branchId} onChange={(e) => setForm({ ...form, branchId: e.target.value, stylist: "No preference" })} disabled={!!editingId} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
+                  <option value="">Choose a branch…</option>
+                  {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </Field>
+            )}
             <Field label="Stylist">
               <select value={form.stylist} onChange={(e) => setForm({ ...form, stylist: e.target.value })} disabled={isStylistView} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
                 {!editingId && <option>No preference</option>}
-                {stylists.filter((s) => s.active).map((s) => <option key={s.id}>{s.name}</option>)}
+                {stylists.filter((s) => s.active && (!formBranch || s.branchId === formBranch.id)).map((s) => <option key={s.id}>{s.name}</option>)}
               </select>
             </Field>
             <Field label="Date">
@@ -104,7 +112,7 @@ export default function AppointmentsTab({ ctx }) {
               <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">{initials(isClientView ? a.service : a.client)}</div>
               <div className="min-w-0">
                 <div className="font-medium truncate">{isClientView ? a.service : a.client}</div>
-                <div className="dc-subtle text-xs truncate">{isClientView ? `with ${a.stylist}` : `${a.service} · ${a.stylist}`} · {formatMoney(a.price ?? priceOf(a.service))} · {(a.duration ?? durationOf(a.service))}m</div>
+                <div className="dc-subtle text-xs truncate">{isClientView ? `with ${a.stylist}` : `${a.service} · ${a.stylist}`}{(isAdmin || isClientView) && branches.find((b) => b.id === a.branchId) ? ` · ${branches.find((b) => b.id === a.branchId).name}` : ""} · {formatMoney(a.price ?? priceOf(a.service))} · {(a.duration ?? durationOf(a.service))}m</div>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">

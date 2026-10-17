@@ -20,7 +20,7 @@ class Tier1HardeningTest extends TestCase
 
     private function user(string $role, array $extra = []): User
     {
-        return User::factory()->create(['role' => $role] + $extra);
+        return User::factory()->create(['role' => $role, 'branch_id' => in_array($role, ['manager', 'stylist']) ? 1 : null] + $extra);
     }
 
     private function service(): Service
@@ -30,12 +30,12 @@ class Tier1HardeningTest extends TestCase
 
     private function stylist(): Stylist
     {
-        return Stylist::create(['name' => 'S '.uniqid(), 'role' => 'Stylist', 'active' => true]);
+        return Stylist::create(['branch_id' => 1, 'name' => 'S '.uniqid(), 'role' => 'Stylist', 'active' => true]);
     }
 
     private function appointment(Client $client, string $when, string $status = 'confirmed', ?Stylist $stylist = null): Appointment
     {
-        return Appointment::create([
+        return Appointment::create(['branch_id' => 1, 
             'client_id' => $client->id, 'stylist_id' => ($stylist ?? $this->stylist())->id, 'service_id' => $this->service()->id,
             'scheduled_at' => $when, 'status' => $status, 'price' => 50,
         ]);

@@ -30,7 +30,7 @@ class ResourceCoverageTest extends TestCase
 
     private function stylist(string $name = 'Marisol', bool $active = true): Stylist
     {
-        return Stylist::create(['name' => $name, 'role' => 'Colorist', 'active' => $active, 'branch_id' => 1]);
+        return Stylist::create(['branch_id' => 1, 'name' => $name, 'role' => 'Colorist', 'active' => $active, 'branch_id' => 1]);
     }
 
     // ---- inventory -------------------------------------------------------------------
@@ -124,7 +124,7 @@ class ResourceCoverageTest extends TestCase
         $this->as('admin');
         $service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 45]);
         $client = Client::create(['name' => 'C']);
-        Appointment::create(['client_id' => $client->id, 'stylist_id' => $this->stylist()->id, 'service_id' => $service->id, 'scheduled_at' => now()->addDay()->format('Y-m-d').' 10:00:00', 'status' => 'confirmed', 'price' => 50]);
+        Appointment::create(['branch_id' => 1, 'client_id' => $client->id, 'stylist_id' => $this->stylist()->id, 'service_id' => $service->id, 'scheduled_at' => now()->addDay()->format('Y-m-d').' 10:00:00', 'status' => 'confirmed', 'price' => 50]);
 
         $this->deleteJson("/api/services/{$service->id}")->assertStatus(422);
         $this->assertNotNull($service->fresh());
@@ -202,7 +202,7 @@ class ResourceCoverageTest extends TestCase
     public function test_only_managers_can_see_or_remove_waitlist_entries(): void
     {
         $service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 45]);
-        $entry = WaitlistEntry::create(['client_name' => 'W', 'service_id' => $service->id, 'preferred_date' => now()->addDay()->format('Y-m-d'), 'status' => 'waiting']);
+        $entry = WaitlistEntry::create(['branch_id' => 1, 'client_name' => 'W', 'service_id' => $service->id, 'preferred_date' => now()->addDay()->format('Y-m-d'), 'status' => 'waiting']);
 
         foreach (['client', 'stylist'] as $role) {
             $this->as($role);
@@ -231,7 +231,7 @@ class ResourceCoverageTest extends TestCase
         $service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 45]);
         $other = Client::create(['name' => 'Someone Else']);
 
-        $res = $this->postJson('/api/waitlist', ['client_id' => $other->id, 'service_id' => $service->id, 'preferred_date' => now()->addDays(2)->format('Y-m-d')])->assertCreated();
+        $res = $this->postJson('/api/waitlist', ['client_id' => $other->id, 'service_id' => $service->id, 'branch_id' => 1, 'preferred_date' => now()->addDays(2)->format('Y-m-d')])->assertCreated();
 
         $own = Client::where('user_id', $user->id)->firstOrFail();
         $this->assertSame($own->id, $res->json('client_id'), 'a client cannot put the entry under another client');

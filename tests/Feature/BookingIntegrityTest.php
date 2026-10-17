@@ -35,7 +35,7 @@ class BookingIntegrityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->stylist = Stylist::create(['name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
+        $this->stylist = Stylist::create(['branch_id' => 1, 'name' => 'Marisol', 'role' => 'Colorist', 'active' => true]);
         $this->service = Service::create(['name' => 'Cut', 'price' => 50, 'duration_minutes' => 60]);
         $this->client = Client::create(['name' => 'Cleo Client']);
         $this->day = now()->addDays(3)->format('Y-m-d');
@@ -43,7 +43,7 @@ class BookingIntegrityTest extends TestCase
 
     private function as(string $role, array $extra = []): User
     {
-        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role] + $extra);
+        $user = User::create(['name' => ucfirst($role), 'email' => $role.uniqid().'@t.test', 'password' => 'password', 'role' => $role, 'branch_id' => in_array($role, ['manager', 'stylist']) ? 1 : null] + $extra);
         Sanctum::actingAs($user);
 
         return $user;
@@ -51,7 +51,7 @@ class BookingIntegrityTest extends TestCase
 
     private function appt(string $time, string $status = 'confirmed', ?Stylist $stylist = null): Appointment
     {
-        return Appointment::create([
+        return Appointment::create(['branch_id' => 1, 
             'client_id' => $this->client->id, 'stylist_id' => ($stylist ?? $this->stylist)->id, 'service_id' => $this->service->id,
             'scheduled_at' => "{$this->day} {$time}", 'status' => $status, 'price' => 50,
         ]);

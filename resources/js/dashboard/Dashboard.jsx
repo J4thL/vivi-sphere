@@ -56,7 +56,7 @@ export default function Dashboard(props) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState("");
-  const emptyForm = { client: isClientView ? user.name : "", clientId: null, newClient: false, service: Object.keys(services)[0], stylist: "No preference", date: todayStr(0), time: "12:00" };
+  const emptyForm = { client: isClientView ? user.name : "", clientId: null, newClient: false, service: Object.keys(services)[0], stylist: "No preference", branchId: "", date: todayStr(0), time: "12:00" };
   const [form, setForm] = useState(emptyForm);
   const [convertingWaitlistId, setConvertingWaitlistId] = useState(null);
   const [reviewDraft, setReviewDraft] = useState({});
@@ -84,10 +84,19 @@ export default function Dashboard(props) {
   const isSlotConflict = (stylistName, date, time, service, excludeId) =>
     appointments.some((a) => a.id !== excludeId && a.stylist === stylistName && a.date === date && a.status !== "cancelled" && rangesOverlap(a.time, a.duration ?? durationOf(a.service), time, durationOf(service)));
 
-  const isWithinHours = (time, service) => {
+  // Staff other than the admin work in one branch. Clients and the admin choose which branch a booking is for
+  // (and if only one branch is open, it is simply that one).
+  const activeBranches = branches.filter((b) => b.active);
+  const lockedBranchId = (isManagerView && !isAdmin) || isStylistView ? user.branch_id : null;
+  const formBranchId = lockedBranchId ?? (Number(form.branchId) || (activeBranches.length === 1 ? activeBranches[0].id : null));
+  const formBranch = branches.find((b) => b.id === formBranchId) || null;
+
+  const isWithinHours = (time, service, branch = formBranch) => {
     const start = timeToMinutes(time);
     const end = start + durationOf(service);
-    return start >= timeToMinutes(landingContent.openTime) && end <= timeToMinutes(landingContent.closeTime);
+    const open = branch?.open_time ?? landingContent.openTime;
+    const close = branch?.close_time ?? landingContent.closeTime;
+    return start >= timeToMinutes(open) && end <= timeToMinutes(close);
   };
 
   const advanceStatus = async (id, next) => {
@@ -100,8 +109,8 @@ export default function Dashboard(props) {
     askConfirm(`Cancel ${a.client}'s ${a.service} on ${a.date} at ${a.time}?`, () => advanceStatus(a.id, "cancelled"), "Cancel appointment");
   };
 
-  const leastBookedActiveStylist = (date) => {
-    const active = stylists.filter((s) => s.active);
+  const leastBookedActiveStylist = (date, branchId = formBranchId) => {
+    const active = stylists.filter((s) => s.active && (branchId == null || s.branchId === branchId));
     if (active.length === 0) return stylists[0]?.name;
     const counts = active.map((s) => ({ name: s.name, count: appointments.filter((a) => a.stylist === s.name && a.date === date && a.status !== "cancelled").length }));
     return counts.sort((a, b) => a.count - b.count)[0].name;
@@ -111,11 +120,12 @@ export default function Dashboard(props) {
 
   const joinWaitlist = async () => {
     const tempId = `temp-${Date.now()}`;
-    const entry = { id: tempId, clientName: form.client, service: form.service, stylist: form.stylist === "No preference" ? null : form.stylist, preferredDate: form.date };
+    if (!formBranchId) { setFormError("Please choose a branch."); return; }
+    const entry = { id: tempId, clientName: form.client, service: form.service, stylist: form.stylist === "No preference" ? null : form.stylist, preferredDate: form.date, branchId: formBranchId };
     const stylistId = stylists.find((s) => s.name === entry.stylist)?.id;
     setWaitlist((prev) => [...prev, entry]);
     resetForm();
-    const result = await apiSend("/waitlist", "POST", { client_name: entry.clientName, service_id: services[entry.service]?.id, ...(stylistId ? { stylist_id: stylistId } : {}), preferred_date: entry.preferredDate }, token);
+    const result = await apiSend("/waitlist", "POST", { client_name: entry.clientName, service_id: services[entry.service]?.id, ...(stylistId ? { stylist_id: stylistId } : {}), branch_id: entry.branchId, preferred_date: entry.preferredDate }, token);
     if (result?.error) {
       setWaitlist((prev) => prev.filter((w) => w.id !== tempId));
       notify(result.message, "error");
@@ -129,7 +139,7 @@ export default function Dashboard(props) {
   // "Convert" pre-fills the booking form from a waitlist entry; remember which entry
   // so it can be removed once the appointment is actually saved.
   const convertWaitlistEntry = (w) => {
-    setForm({ client: w.clientName, clientId: null, newClient: false, service: w.service, stylist: w.stylist || "No preference", date: w.preferredDate, time: "12:00" });
+    setForm({ client: w.clientName, clientId: null, newClient: false, service: w.service, stylist: w.stylist || "No preference", branchId: w.branchId ?? "", date: w.preferredDate, time: "12:00" });
     setConvertingWaitlistId(w.id);
     setFormError("");
     setShowForm(true);
@@ -137,8 +147,10 @@ export default function Dashboard(props) {
 
   const submitAppointmentRaw = async () => {
     if (!form.client.trim()) { setFormError("Enter a client name."); return; }
-    if (!isWithinHours(form.time, form.service)) { setFormError(`That's outside our hours (${landingContent.openTime}–${landingContent.closeTime}).`); return; }
+    if (!formBranchId) { setFormError("Please choose a branch."); return; }
+    if (!isWithinHours(form.time, form.service)) { setFormError(`That's outside this branch's hours (${formBranch?.open_time ?? landingContent.openTime}–${formBranch?.close_time ?? landingContent.closeTime}).`); return; }
     const stylistName = form.stylist === "No preference" ? leastBookedActiveStylist(form.date) : form.stylist;
+    if (!stylistName) { setFormError("No stylist is available at this branch."); return; }
 
     if (isSlotConflict(stylistName, form.date, form.time, form.service, editingId)) {
       setFormError("That stylist is already booked over this time. Pick another slot, or join the waitlist.");
@@ -153,7 +165,7 @@ export default function Dashboard(props) {
       notify("Appointment rescheduled.");
     } else {
       const tempId = `temp-${Date.now()}`;
-      const newAppt = { id: tempId, date: form.date, time: form.time, client: form.client, service: form.service, stylist: stylistName, status: "confirmed" };
+      const newAppt = { id: tempId, date: form.date, time: form.time, client: form.client, service: form.service, stylist: stylistName, branchId: formBranchId, status: "confirmed" };
       setAppointments((prev) => [...prev, newAppt].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)));
       const result = await apiSend("/appointments", "POST", { client_name: form.client, ...(form.clientId ? { client_id: form.clientId } : {}), ...(form.newClient ? { new_client: true } : {}), stylist_id: stylists.find((s) => s.name === stylistName)?.id, service_id: services[form.service]?.id, scheduled_at: `${form.date} ${form.time}:00` }, token);
       if (result?.error) {
@@ -175,7 +187,7 @@ export default function Dashboard(props) {
     resetForm();
   };
 
-  const startReschedule = (a) => { setEditingId(a.id); setForm({ client: a.client, clientId: null, newClient: false, service: a.service, stylist: a.stylist, date: a.date, time: a.time }); setFormError(""); setShowForm(true); };
+  const startReschedule = (a) => { setEditingId(a.id); setForm({ client: a.client, clientId: null, newClient: false, service: a.service, stylist: a.stylist, branchId: a.branchId ?? "", date: a.date, time: a.time }); setFormError(""); setShowForm(true); };
 
   const toggleStylistActive = (id) => {
     const target = stylists.find((s) => s.id === id);
@@ -403,7 +415,7 @@ export default function Dashboard(props) {
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,
-    convertWaitlistEntry, inventory, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
+    activeBranches, lockedBranchId, formBranch, convertWaitlistEntry, inventory, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
     landingContent, leaderboard, moderateReview, myClientRecord, newClientsToday, newFaq,
     newItem, newService, newStylist, occupancyRate, overviewPreview, priceOf,
     removeFaq, removeWaitlistEntry, reportRange, resetForm, revenueByService, revenueTrend,

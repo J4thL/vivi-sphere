@@ -21,7 +21,7 @@ class ApiFlowsTest extends TestCase
 
     private function user(string $role, array $extra = []): User
     {
-        return User::factory()->create(['role' => $role] + $extra);
+        return User::factory()->create(['role' => $role, 'branch_id' => in_array($role, ['manager', 'stylist']) ? 1 : null] + $extra);
     }
 
     private function service(array $o = []): Service
@@ -31,7 +31,7 @@ class ApiFlowsTest extends TestCase
 
     private function stylist(bool $active = true): Stylist
     {
-        return Stylist::create(['name' => 'S '.uniqid(), 'role' => 'Stylist', 'active' => $active]);
+        return Stylist::create(['branch_id' => 1, 'name' => 'S '.uniqid(), 'role' => 'Stylist', 'active' => $active]);
     }
 
     private function nextWeekdayAt(string $time): string
@@ -131,7 +131,7 @@ class ApiFlowsTest extends TestCase
         $admin = $this->user('admin');
         Sanctum::actingAs($admin);
         $client = Client::create(['name' => 'Repeat']);
-        $appt = Appointment::create([
+        $appt = Appointment::create(['branch_id' => 1, 
             'client_id' => $client->id, 'stylist_id' => $this->stylist()->id, 'service_id' => $this->service()->id,
             'scheduled_at' => $this->nextWeekdayAt('10:00'), 'status' => 'confirmed', 'price' => 50,
         ]);
@@ -149,7 +149,7 @@ class ApiFlowsTest extends TestCase
         $other = $this->user('client');
         $myClient = Client::create(['user_id' => $mine->id, 'name' => $mine->name]);
         $otherClient = Client::create(['user_id' => $other->id, 'name' => $other->name]);
-        $mk = fn ($c) => Appointment::create([
+        $mk = fn ($c) => Appointment::create(['branch_id' => 1, 
             'client_id' => $c->id, 'stylist_id' => $this->stylist()->id, 'service_id' => $this->service()->id,
             'scheduled_at' => $this->nextWeekdayAt('10:00'), 'status' => 'confirmed', 'price' => 50,
         ]);
@@ -208,7 +208,7 @@ class ApiFlowsTest extends TestCase
     {
         $client = Client::create(['name' => 'Rev']);
         $stylist = $this->stylist();
-        $appt = fn () => Appointment::create([
+        $appt = fn () => Appointment::create(['branch_id' => 1, 
             'client_id' => $client->id, 'stylist_id' => $stylist->id, 'service_id' => $this->service()->id,
             'scheduled_at' => $this->nextWeekdayAt('10:00'), 'status' => 'completed', 'price' => 50,
         ]);
