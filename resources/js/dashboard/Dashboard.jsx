@@ -67,7 +67,7 @@ export default function Dashboard(props) {
   const [newService, setNewService] = useState({ name: "", price: "", duration: "" });
   const [editingStylistId, setEditingStylistId] = useState(null);
   const [stylistEditDraft, setStylistEditDraft] = useState({});
-  const [newItem, setNewItem] = useState({ name: "", category: "", qty: "", reorder: "", unitCost: "" });
+  const [newItem, setNewItem] = useState({ name: "", category: "", qty: "", reorder: "", unitCost: "", branchId: "" });
   const [savedMsg, setSavedMsg] = useState("");
   const [siteDraft, setSiteDraft] = useState(landingContent);
   const [newFaq, setNewFaq] = useState({ question: "", answer: "" });
@@ -230,17 +230,18 @@ export default function Dashboard(props) {
 
   const addInventoryItemRaw = async () => {
     if (!newItem.name.trim()) return;
+    if (isAdmin && !newItem.branchId) { notify("Please choose a branch for this item.", "error"); return; }
     const tempId = `temp-${Date.now()}`;
-    const rec = { id: tempId, name: newItem.name, category: newItem.category || "General", qty: Number(newItem.qty) || 0, reorder: Number(newItem.reorder) || 5, unitCost: Number(newItem.unitCost) || 0 };
+    const rec = { id: tempId, name: newItem.name, category: newItem.category || "General", qty: Number(newItem.qty) || 0, reorder: Number(newItem.reorder) || 5, unitCost: Number(newItem.unitCost) || 0, branchId: isAdmin ? Number(newItem.branchId) : user.branch_id };
     setInventory((prev) => [...prev, rec]);
-    setNewItem({ name: "", category: "", qty: "", reorder: "", unitCost: "" });
+    setNewItem({ name: "", category: "", qty: "", reorder: "", unitCost: "", branchId: "" });
     // The API uses snake_case column names (reorder_level, unit_cost) while
     // this component uses camelCase - translate rather than sending `rec` raw.
     const result = await apiSend("/inventory", "POST", {
       name: rec.name, category: rec.category, qty: rec.qty,
-      reorder_level: rec.reorder, unit_cost: rec.unitCost,
+      reorder_level: rec.reorder, unit_cost: rec.unitCost, ...(isAdmin ? { branch_id: rec.branchId } : {}),
     }, token);
-    if (result?.error) { notify(result.message, "error"); return; }
+    if (result?.error) { setInventory((prev) => prev.filter((i) => i.id !== tempId)); notify(result.message, "error"); return; }
     if (result?.id) setInventory((prev) => prev.map((i) => (i.id === tempId ? { ...rec, id: result.id } : i)));
     notify("Inventory item added.");
   };

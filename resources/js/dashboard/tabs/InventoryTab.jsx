@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AlertTriangle, Minus, Plus } from "lucide-react";
 import { formatMoney } from "../helpers.js";
 import { useTheme } from "../theme.jsx";
@@ -5,14 +6,24 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function InventoryTab({ ctx }) {
   const { colors } = useTheme();
-  const { addInventoryItem, busy, adjustInventory, inventory, newItem, setNewItem } = ctx;
+  const { addInventoryItem, activeBranches, branches, busy, adjustInventory, inventory, isAdmin, newItem, setNewItem } = ctx;
+  const [branchFilter, setBranchFilter] = useState("all");
+  const shown = branchFilter === "all" ? inventory : inventory.filter((i) => i.branchId === Number(branchFilter));
+  const branchName = (id) => branches.find((b) => b.id === id)?.name;
   return (
     <div className="flex flex-col gap-4">
+      {isAdmin && (
+        <select aria-label="Filter by branch" value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-3 py-2 rounded-lg w-fit">
+          <option value="all">All branches</option>
+          {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+      )}
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr style={{ color: colors.subtle, borderBottom: `1px solid ${colors.border}` }} className="text-left">
               <th className="font-semibold py-3 px-5">Item</th>
+              {isAdmin && <th className="font-semibold py-3 px-5">Branch</th>}
               <th className="font-semibold py-3 px-5">Category</th>
               <th className="font-semibold py-3 px-5">Unit cost</th>
               <th className="font-semibold py-3 px-5">Quantity</th>
@@ -20,11 +31,12 @@ export default function InventoryTab({ ctx }) {
             </tr>
           </thead>
           <tbody>
-            {inventory.map((i) => {
+            {shown.map((i) => {
               const low = i.qty <= i.reorder;
               return (
                 <tr key={i.id} style={{ borderBottom: `1px solid ${colors.border}` }}>
                   <td className="py-3 px-5 font-medium">{i.name}</td>
+                  {isAdmin && <td className="dc-subtle py-3 px-5">{branchName(i.branchId) || "—"}</td>}
                   <td className="dc-subtle py-3 px-5">{i.category}</td>
                   <td className="dc-subtle py-3 px-5">{formatMoney(i.unitCost)}</td>
                   <td className="py-3 px-5">
@@ -51,6 +63,14 @@ export default function InventoryTab({ ctx }) {
         <div className="font-display text-lg mb-4">Add inventory item</div>
         <div className="flex items-end gap-3 flex-wrap">
           <Field label="Name"><input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-44" /></Field>
+          {isAdmin && (
+            <Field label="Branch">
+              <select value={newItem.branchId} onChange={(e) => setNewItem({ ...newItem, branchId: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-36">
+                <option value="">Choose…</option>
+                {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </Field>
+          )}
           <Field label="Category"><input value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-32" /></Field>
           <Field label="Qty"><input type="number" value={newItem.qty} onChange={(e) => setNewItem({ ...newItem, qty: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-20" /></Field>
           <Field label="Reorder at"><input type="number" value={newItem.reorder} onChange={(e) => setNewItem({ ...newItem, reorder: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-24" /></Field>

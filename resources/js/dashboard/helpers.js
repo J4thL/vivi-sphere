@@ -169,6 +169,7 @@ export function normalizeInventoryItem(i) {
     qty: i.qty ?? 0,
     reorder: i.reorder_level ?? i.reorder ?? 5,
     unitCost: Number(i.unit_cost ?? i.unitCost) || 0,
+    branchId: i.branch_id ?? i.branchId ?? null,
   };
 }
 
