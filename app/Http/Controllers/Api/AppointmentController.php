@@ -159,6 +159,11 @@ class AppointmentController extends Controller
         if ($branch && ! $branch->active) {
             throw ValidationException::withMessages(['stylist_id' => 'That branch is not taking bookings right now.']);
         }
+        // This branch's own price and length for the service (or the normal ones), and whether it is offered here.
+        $terms = $service->termsFor($stylist->branch_id);
+        if (! $terms->available) {
+            throw ValidationException::withMessages(['service_id' => 'That service is not offered at this branch.']);
+        }
 
         // Two different people can share a name, so a typed name alone must never be assumed to be
         // an existing client (that silently merged their visit history and spend). Staff either pick
@@ -169,7 +174,7 @@ class AppointmentController extends Controller
         }
 
         $this->assertNotInPast($start);
-        if (! $this->withinBusinessHours($start, $service->duration_minutes, $branch)) {
+        if (! $this->withinBusinessHours($start, $terms->duration_minutes, $branch)) {
             throw ValidationException::withMessages(['scheduled_at' => 'That time is outside this branch\'s open hours.']);
         }
 
@@ -177,10 +182,10 @@ class AppointmentController extends Controller
         // simultaneous requests could both see a free slot. Locking the stylist's row makes the
         // second request wait until the first has committed, then see its appointment. The client
         // record, the appointment and the audit entry are saved together or not at all.
-        $appointment = DB::transaction(function () use ($user, $data, $service, $start, $stylist) {
+        $appointment = DB::transaction(function () use ($user, $data, $service, $start, $stylist, $terms) {
             $this->lockStylist((int) $data['stylist_id']);
 
-            if ($this->slotOverlaps((int) $data['stylist_id'], $start, $service->duration_minutes)) {
+            if ($this->slotOverlaps((int) $data['stylist_id'], $start, $terms->duration_minutes)) {
                 throw ValidationException::withMessages(['scheduled_at' => 'That stylist is already booked over this time. Pick another slot or join the waitlist.']);
             }
 
@@ -197,10 +202,10 @@ class AppointmentController extends Controller
                 'stylist_id' => $data['stylist_id'],
                 'branch_id' => $stylist->branch_id,
                 'service_id' => $service->id,
-                'duration_minutes' => $service->duration_minutes,
+                'duration_minutes' => $terms->duration_minutes,
                 'scheduled_at' => $data['scheduled_at'],
                 'status' => 'confirmed',
-                'price' => $service->price,
+                'price' => $terms->price,
             ]);
 
             AuditLog::record($user, 'appointment.booked', $appointment);
@@ -286,8 +291,12 @@ class AppointmentController extends Controller
 
         $newService = isset($data['service_id']) ? Service::findOrFail($data['service_id']) : $appointment->service;
         if (isset($data['service_id']) && (int) $data['service_id'] !== (int) $appointment->service_id) {
-            $data['price'] = $newService->price; // a different service re-prices; the same one keeps the booked price
-            $data['duration_minutes'] = $newService->duration_minutes; // ...and takes that service's length
+            $newTerms = $newService->termsFor($appointment->branch_id);
+            if (! $newTerms->available) {
+                throw ValidationException::withMessages(['service_id' => 'That service is not offered at this branch.']);
+            }
+            $data['price'] = $newTerms->price; // a different service re-prices; the same one keeps the booked price
+            $data['duration_minutes'] = $newTerms->duration_minutes; // ...and takes that service's length (at this branch)
         }
 
         // Only an actual change counts: a client that echoes back the current stylist, service or

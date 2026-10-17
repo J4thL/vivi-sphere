@@ -5,7 +5,7 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function AppointmentsTab({ ctx }) {
   const { colors } = useTheme();
-  const { activeBranches, branches, lockedBranchId, formBranch, user, isAdmin, advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
+  const { termsFor, activeBranches, branches, lockedBranchId, formBranch, user, isAdmin, advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
   return (
     <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
       {(isManagerView || isStylistView) && (
@@ -66,12 +66,12 @@ export default function AppointmentsTab({ ctx }) {
             )}
             <Field label="Service">
               <select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
-                {Object.keys(services).map((s) => <option key={s} value={s}>{s} ({services[s].duration}m)</option>)}
+                {Object.keys(services).filter((s) => !formBranch || termsFor(s, formBranch.id).available || s === form.service).map((s) => <option key={s} value={s}>{s} ({termsFor(s, formBranch?.id ?? null).duration}m)</option>)}
               </select>
             </Field>
             {lockedBranchId == null && activeBranches.length > 1 && (
               <Field label="Branch">
-                <select value={form.branchId} onChange={(e) => setForm({ ...form, branchId: e.target.value, stylist: "No preference" })} disabled={!!editingId} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
+                <select value={form.branchId} onChange={(e) => { const id = Number(e.target.value) || null; const stillOffered = !id || termsFor(form.service, id).available; setForm({ ...form, branchId: e.target.value, stylist: "No preference", service: stillOffered ? form.service : (Object.keys(services).find((n) => termsFor(n, id).available) || form.service) }); }} disabled={!!editingId} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-3 py-2 rounded-lg text-sm">
                   <option value="">Choose a branch…</option>
                   {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>

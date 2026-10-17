@@ -2,11 +2,12 @@ import { useState } from "react";
 import { apiSend } from "../api.js";
 import { useTheme } from "../theme.jsx";
 import { Field } from "../ui.jsx";
+import BranchServicesCard from "./BranchServicesCard.jsx";
 
 const EMPTY = { name: "", address: "", phone: "", open_time: "09:00", close_time: "19:00" };
 
 /* Admin-only: add and edit the salon's branches. Branches are switched off, never deleted. */
-export default function BranchesTab({ token, notify, branches, setBranches }) {
+export default function BranchesTab({ token, notify, branches, setBranches, services, branchServices, setBranchServices }) {
   const { colors } = useTheme();
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
@@ -67,6 +68,8 @@ export default function BranchesTab({ token, notify, branches, setBranches }) {
           </div>
         ))}
       </div>
+
+      <BranchServicesCard token={token} notify={notify} branches={branches} services={services} branchServices={branchServices} setBranchServices={setBranchServices} />
     </div>
   );
 }
