@@ -15,7 +15,12 @@ class ReviewController extends Controller
         $user = $request->user('sanctum');
 
         if ($user?->isManager()) {
-            return Review::with(['client', 'stylist'])->latest()->limit(config('salon.reviews_max'))->get();
+            // A manager moderates their own branch's reviews (a review belongs to its stylist's branch);
+            // the admin sees every branch, or one with ?branch_id=.
+            return Review::with(['client', 'stylist'])
+                ->when(! $user->isAdmin(), fn ($q) => $q->whereHas('stylist', fn ($s) => $s->where('branch_id', $user->branch_id)))
+                ->when($user->isAdmin() && $request->filled('branch_id'), fn ($q) => $q->whereHas('stylist', fn ($s) => $s->where('branch_id', (int) $request->query('branch_id'))))
+                ->latest()->limit(config('salon.reviews_max'))->get();
         }
 
         // Everyone else gets a minimal, privacy-safe shape: never the client's
@@ -24,7 +29,7 @@ class ReviewController extends Controller
         // "review this visit" prompts for visits they already reviewed.
         $ownClientId = $user?->isClient() ? $user->client?->id : null;
 
-        return Review::with(['client:id,name', 'stylist:id,name'])
+        return Review::with(['client:id,name', 'stylist:id,name,branch_id'])
             ->where('status', 'approved')
             ->latest()
             ->limit(config('salon.public_reviews_max'))
@@ -37,7 +42,7 @@ class ReviewController extends Controller
                     'status' => $review->status,
                     'created_at' => $review->created_at,
                     'client' => ['name' => $review->client->public_name],
-                    'stylist' => ['id' => $review->stylist->id, 'name' => $review->stylist->name],
+                    'stylist' => ['id' => $review->stylist->id, 'name' => $review->stylist->name, 'branch_id' => $review->stylist->branch_id],
                 ];
                 if ($ownClientId !== null && $review->client_id === $ownClientId) {
                     $row['appointment_id'] = $review->appointment_id;
@@ -81,7 +86,7 @@ class ReviewController extends Controller
 
     public function update(Request $request, Review $review)
     {
-        abort_unless($request->user()->isManager(), 403);
+        abort_unless($request->user()->isManager() && $request->user()->canAccessBranch($review->stylist->branch_id), 403);
 
         $data = $request->validate(['status' => ['required', 'in:approved,rejected']]);
         $review->update($data);

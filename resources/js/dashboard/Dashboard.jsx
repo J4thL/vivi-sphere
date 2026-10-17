@@ -50,6 +50,7 @@ export default function Dashboard(props) {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stylistFilter, setStylistFilter] = useState("All");
+  const [branchView, setBranchView] = useState("all"); // admin only: look at one branch, or all of them
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientSearch, setClientSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState(todayStr(0));
@@ -340,7 +341,12 @@ export default function Dashboard(props) {
 
   // The API already limits appointments to the signed-in stylist's or client's own,
   // so no name-based filtering here (names aren't unique and can differ from the login name).
-  const scopedAppointments = appointments;
+  // The admin can narrow everything to one branch; managers are already limited to theirs by the server.
+  const viewBranchId = isAdmin && branchView !== "all" ? Number(branchView) : null;
+  const branchAppointments = viewBranchId ? appointments.filter((a) => a.branchId === viewBranchId) : appointments;
+  const viewInventory = viewBranchId ? inventory.filter((i) => i.branchId === viewBranchId) : inventory;
+  const viewReviews = viewBranchId ? reviews.filter((r) => r.stylistBranchId === viewBranchId) : reviews;
+  const scopedAppointments = branchAppointments;
 
   const dayAppointments = isManagerView || isStylistView ? scopedAppointments.filter((a) => a.date === selectedDate) : scopedAppointments;
 
@@ -373,18 +379,19 @@ export default function Dashboard(props) {
 
   const leaderboard = useMemo(() => {
     const totals = {};
-    stylists.forEach((s) => (totals[s.name] = 0));
-    appointments.filter((a) => a.status === "completed" || a.status === "in-progress").forEach((a) => { totals[a.stylist] = (totals[a.stylist] || 0) + (a.price ?? priceOf(a.service)); });
+    const board = viewBranchId ? stylists.filter((s) => s.branchId === viewBranchId) : stylists;
+    board.forEach((s) => (totals[s.name] = 0));
+    branchAppointments.filter((a) => a.status === "completed" || a.status === "in-progress").forEach((a) => { totals[a.stylist] = (totals[a.stylist] || 0) + (a.price ?? priceOf(a.service)); });
     const max = Math.max(1, ...Object.values(totals));
-    return stylists.map((s) => ({ ...s, total: totals[s.name] || 0, pct: (totals[s.name] || 0) / max })).sort((a, b) => b.total - a.total);
-  }, [appointments, stylists, priceOf]);
+    return board.map((s) => ({ ...s, total: totals[s.name] || 0, pct: (totals[s.name] || 0) / max })).sort((a, b) => b.total - a.total);
+  }, [branchAppointments, stylists, viewBranchId, priceOf]);
 
   const reportRangeStart = useMemo(() => {
     if (reportRange === "today") return todayStr(0);
     if (reportRange === "week") return todayStr(-6);
     return todayStr(-29); // month: last 30 days including today
   }, [reportRange]);
-  const reportAppointments = useMemo(() => appointments.filter((a) => a.date >= reportRangeStart && a.date <= todayStr(0)), [appointments, reportRangeStart]);
+  const reportAppointments = useMemo(() => branchAppointments.filter((a) => a.date >= reportRangeStart && a.date <= todayStr(0)), [branchAppointments, reportRangeStart]);
 
   const revenueByService = useMemo(() => {
     const totals = {};
@@ -422,11 +429,11 @@ export default function Dashboard(props) {
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,
-    activeBranches, lockedBranchId, formBranch, termsFor, branchServices, convertWaitlistEntry, inventory, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
+    activeBranches, lockedBranchId, formBranch, termsFor, branchServices, convertWaitlistEntry, inventory: viewInventory, viewBranchId, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
     landingContent, leaderboard, moderateReview, myClientRecord, newClientsToday, newFaq,
     newItem, newService, newStylist, occupancyRate, overviewPreview, priceOf,
     removeFaq, removeWaitlistEntry, reportRange, resetForm, revenueByService, revenueTrend,
-    reviewDraft, reviewableAppointments, reviews, saveSalonInfo, saveSite, saveStylistEdit,
+    reviewDraft, reviewableAppointments, reviews: viewReviews, saveSalonInfo, saveSite, saveStylistEdit,
     savedMsg, scopedAppointments, selectedDate, services, setActiveTab, setClientSearch,
     setEditingStylistId, setForm, setFormError, setNewFaq, setNewItem, setNewService, setNewStylist,
     setReportRange, setReviewDraft, setSelectedDate, setShowForm, setSiteDraft, setStatusFilter,
@@ -504,6 +511,12 @@ export default function Dashboard(props) {
             </div>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
+            {isAdmin && branches.length > 1 && (
+              <select aria-label="Branch" value={branchView} onChange={(e) => setBranchView(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-3 py-2 rounded-lg max-w-[10rem]">
+                <option value="all">All branches</option>
+                {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            )}
             <button onClick={() => { setActiveTab("appointments"); resetForm(); setShowForm(true); }} className="btn-wine flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap">
               <Plus size={14} /> <span className="hidden sm:inline">{isClientView ? "Book appointment" : "New appointment"}</span><span className="sm:hidden">Book</span>
             </button>

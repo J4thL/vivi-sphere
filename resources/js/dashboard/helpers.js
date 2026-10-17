@@ -183,6 +183,7 @@ export function normalizeReview(r) {
     appointmentId: r.appointment_id ?? r.appointmentId,
     clientName: r.client?.name ?? r.clientName,
     stylistName: r.stylist?.name ?? r.stylistName,
+    stylistBranchId: r.stylist?.branch_id ?? r.stylistBranchId ?? null,
     rating: r.rating,
     comment: r.comment || "",
     status: r.status,

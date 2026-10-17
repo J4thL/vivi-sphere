@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { AlertTriangle, Minus, Plus } from "lucide-react";
 import { formatMoney } from "../helpers.js";
 import { useTheme } from "../theme.jsx";
@@ -7,17 +6,10 @@ import { Field, IconBtn } from "../ui.jsx";
 export default function InventoryTab({ ctx }) {
   const { colors } = useTheme();
   const { addInventoryItem, activeBranches, branches, busy, adjustInventory, inventory, isAdmin, newItem, setNewItem } = ctx;
-  const [branchFilter, setBranchFilter] = useState("all");
-  const shown = branchFilter === "all" ? inventory : inventory.filter((i) => i.branchId === Number(branchFilter));
+  const shown = inventory; // already narrowed to the branch chosen in the header, if any
   const branchName = (id) => branches.find((b) => b.id === id)?.name;
   return (
     <div className="flex flex-col gap-4">
-      {isAdmin && (
-        <select aria-label="Filter by branch" value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="text-sm px-3 py-2 rounded-lg w-fit">
-          <option value="all">All branches</option>
-          {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
-      )}
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

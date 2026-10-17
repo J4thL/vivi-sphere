@@ -5,10 +5,10 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function StylistsTab({ ctx }) {
   const { colors } = useTheme();
-  const { addStylist, branches, user, busy, createdLogin, setCreatedLogin, isAdmin, appointments, editingStylistId, leaderboard, newStylist, saveStylistEdit, setEditingStylistId, setNewStylist, setStylistEditDraft, startEditStylist, stylistEditDraft, stylists, toggleStylistActive } = ctx;
+  const { addStylist, branches, viewBranchId, user, busy, createdLogin, setCreatedLogin, isAdmin, appointments, editingStylistId, leaderboard, newStylist, saveStylistEdit, setEditingStylistId, setNewStylist, setStylistEditDraft, startEditStylist, stylistEditDraft, stylists, toggleStylistActive } = ctx;
   const branchName = (id) => branches.find((b) => b.id === id)?.name;
   // A manager only works with their own branch's stylists; an admin sees everyone.
-  const visibleStylists = isAdmin ? stylists : stylists.filter((s) => s.branchId === user.branch_id);
+  const visibleStylists = isAdmin ? (viewBranchId ? stylists.filter((s) => s.branchId === viewBranchId) : stylists) : stylists.filter((s) => s.branchId === user.branch_id);
   return (
     <div className="flex flex-col gap-4">
       <div className="grid md:grid-cols-2 gap-4">
