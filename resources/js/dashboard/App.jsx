@@ -29,6 +29,7 @@ export default function App() {
   const [screen, setScreen] = useState("login");
   const [user, setUser] = useState(null);
   const [branches, setBranches] = useState([]);
+  const [branchServices, setBranchServices] = useState([]); // a branch's own price/length/availability for a service
   const [token, setToken] = useState(null);
   const tokenRef = useRef(null); // lets the 401 handler tell "my session expired" from "already logged out"
   // Set when a session expires. Requests still in flight then fail with their own
@@ -79,9 +80,10 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
-      const [settingsRes, servicesRes, stylistsRes, reviewsRes] = await Promise.all([
-        apiGet("/settings"), apiGet("/services"), apiGet("/stylists"), apiGet("/reviews"),
+      const [settingsRes, servicesRes, stylistsRes, reviewsRes, branchServicesRes] = await Promise.all([
+        apiGet("/settings"), apiGet("/services"), apiGet("/stylists"), apiGet("/reviews"), apiGet("/branch-services"),
       ]);
+      if (branchServicesRes) setBranchServices(branchServicesRes);
       if (settingsRes) { setLandingContent(fromApiSettings(settingsRes) || EMPTY_LANDING_CONTENT); setApiConnected(true); }
       if (servicesRes) {
         const map = {};
@@ -227,6 +229,7 @@ export default function App() {
         resendVerification={resendVerification}
         onPasswordChanged={(u) => u && setUser(u)}
         branches={branches} setBranches={setBranches}
+        branchServices={branchServices} setBranchServices={setBranchServices}
       />
     );
     if (user?.must_change_password) {

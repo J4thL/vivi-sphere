@@ -25,7 +25,7 @@ export default function Dashboard(props) {
     appointments, setAppointments, services, setServices, stylists, setStylists,
     inventory, setInventory, clients, reviews, setReviews,
     waitlist, setWaitlist, auditLog,
-    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged, branches, setBranches,
+    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged, branches, setBranches, branchServices, setBranchServices,
   } = props;
   const { colors } = useTheme();
   const role = user.role;
@@ -79,10 +79,16 @@ export default function Dashboard(props) {
   // Memoised so the revenue calculations below only re-run when the services change.
   const priceOf = useCallback((service) => (services[service] || { price: 0 }).price, [services]);
   const durationOf = (service) => serviceInfo(service).duration;
+  // A branch can have its own price, length and availability for a service; otherwise the normal ones apply.
+  const termsFor = (name, branchId) => {
+    const base = serviceInfo(name);
+    const o = branchId ? branchServices.find((x) => x.branch_id === branchId && x.service_id === base.id) : null;
+    return { price: o?.price ?? base.price, duration: o?.duration_minutes ?? base.duration, available: o ? o.available : true };
+  };
   const visibleNav = NAV_ITEMS.filter((n) => n.roles.includes(role));
 
   const isSlotConflict = (stylistName, date, time, service, excludeId) =>
-    appointments.some((a) => a.id !== excludeId && a.stylist === stylistName && a.date === date && a.status !== "cancelled" && rangesOverlap(a.time, a.duration ?? durationOf(a.service), time, durationOf(service)));
+    appointments.some((a) => a.id !== excludeId && a.stylist === stylistName && a.date === date && a.status !== "cancelled" && rangesOverlap(a.time, a.duration ?? durationOf(a.service), time, termsFor(service, formBranchId).duration));
 
   // Staff other than the admin work in one branch. Clients and the admin choose which branch a booking is for
   // (and if only one branch is open, it is simply that one).
@@ -93,7 +99,7 @@ export default function Dashboard(props) {
 
   const isWithinHours = (time, service, branch = formBranch) => {
     const start = timeToMinutes(time);
-    const end = start + durationOf(service);
+    const end = start + termsFor(service, branch?.id ?? null).duration;
     const open = branch?.open_time ?? landingContent.openTime;
     const close = branch?.close_time ?? landingContent.closeTime;
     return start >= timeToMinutes(open) && end <= timeToMinutes(close);
@@ -165,7 +171,7 @@ export default function Dashboard(props) {
       notify("Appointment rescheduled.");
     } else {
       const tempId = `temp-${Date.now()}`;
-      const newAppt = { id: tempId, date: form.date, time: form.time, client: form.client, service: form.service, stylist: stylistName, branchId: formBranchId, status: "confirmed" };
+      const newAppt = { id: tempId, date: form.date, time: form.time, client: form.client, service: form.service, stylist: stylistName, branchId: formBranchId, price: termsFor(form.service, formBranchId).price, duration: termsFor(form.service, formBranchId).duration, status: "confirmed" };
       setAppointments((prev) => [...prev, newAppt].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)));
       const result = await apiSend("/appointments", "POST", { client_name: form.client, ...(form.clientId ? { client_id: form.clientId } : {}), ...(form.newClient ? { new_client: true } : {}), stylist_id: stylists.find((s) => s.name === stylistName)?.id, service_id: services[form.service]?.id, scheduled_at: `${form.date} ${form.time}:00` }, token);
       if (result?.error) {
@@ -416,7 +422,7 @@ export default function Dashboard(props) {
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,
-    activeBranches, lockedBranchId, formBranch, convertWaitlistEntry, inventory, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
+    activeBranches, lockedBranchId, formBranch, termsFor, branchServices, convertWaitlistEntry, inventory, isAdmin, isClientView, isManagerView, isStylistView, joinWaitlist,
     landingContent, leaderboard, moderateReview, myClientRecord, newClientsToday, newFaq,
     newItem, newService, newStylist, occupancyRate, overviewPreview, priceOf,
     removeFaq, removeWaitlistEntry, reportRange, resetForm, revenueByService, revenueTrend,
@@ -522,7 +528,7 @@ export default function Dashboard(props) {
           {activeTab === "inventory" && isManagerView && <InventoryTab ctx={ctx} />}
           {activeTab === "reports" && isManagerView && <ReportsTab ctx={ctx} />}
           {activeTab === "reviews" && isManagerView && <ReviewsTab ctx={ctx} />}
-          {activeTab === "branches" && isAdmin && <BranchesTab token={token} notify={notify} branches={branches} setBranches={setBranches} />}
+          {activeTab === "branches" && isAdmin && <BranchesTab token={token} notify={notify} branches={branches} setBranches={setBranches} services={services} branchServices={branchServices} setBranchServices={setBranchServices} />}
           {activeTab === "staff" && isAdmin && <StaffTab token={token} notify={notify} askConfirm={askConfirm} branches={branches} />}
           {activeTab === "website" && isAdmin && <WebsiteTab ctx={ctx} />}
           {activeTab === "audit" && isAdmin && <AuditTab ctx={ctx} />}

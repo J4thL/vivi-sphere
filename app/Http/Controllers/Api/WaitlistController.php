@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Models\Service;
 use App\Models\Stylist;
 use App\Models\WaitlistEntry;
 use Illuminate\Http\Request;
@@ -54,6 +55,10 @@ class WaitlistController extends Controller
         }
         if (! empty($data['stylist_id']) && (int) Stylist::whereKey($data['stylist_id'])->value('branch_id') !== (int) $data['branch_id']) {
             throw ValidationException::withMessages(['stylist_id' => 'That stylist works at a different branch.']);
+        }
+
+        if (! Service::findOrFail($data['service_id'])->termsFor((int) $data['branch_id'])->available) {
+            throw ValidationException::withMessages(['service_id' => 'That service is not offered at this branch.']);
         }
 
         if ($user->isClient()) {
