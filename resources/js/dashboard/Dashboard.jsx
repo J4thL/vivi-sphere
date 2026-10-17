@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LogOut, Menu, Plus, X } from "lucide-react";
-import { apiDelete, apiSend } from "./api.js";
+import { apiDelete, apiSend, savedBranch } from "./api.js";
 import { NAV_ITEMS, STATUS_META, computeWeeklyRevenue, formatDateLabel, initials, rangesOverlap, timeToMinutes, todayStr } from "./helpers.js";
 import AppointmentsTab from "./tabs/AppointmentsTab.jsx";
 import AuditTab from "./tabs/AuditTab.jsx";
@@ -25,7 +25,7 @@ export default function Dashboard(props) {
     appointments, setAppointments, services, setServices, stylists, setStylists,
     inventory, setInventory, clients, reviews, setReviews,
     waitlist, setWaitlist, auditLog,
-    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged, branches, setBranches, branchServices, setBranchServices,
+    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged, branches, setBranches, branchServices, setBranchServices, preferredBranchId, onPreferredBranchUsed,
   } = props;
   const { colors } = useTheme();
   const role = user.role;
@@ -57,7 +57,7 @@ export default function Dashboard(props) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState("");
-  const emptyForm = { client: isClientView ? user.name : "", clientId: null, newClient: false, service: Object.keys(services)[0], stylist: "No preference", branchId: "", date: todayStr(0), time: "12:00" };
+  const emptyForm = { client: isClientView ? user.name : "", clientId: null, newClient: false, service: Object.keys(services)[0], stylist: "No preference", branchId: isClientView ? savedBranch.get() : "", date: todayStr(0), time: "12:00" };
   const [form, setForm] = useState(emptyForm);
   const [convertingWaitlistId, setConvertingWaitlistId] = useState(null);
   const [reviewDraft, setReviewDraft] = useState({});
@@ -95,7 +95,9 @@ export default function Dashboard(props) {
   // (and if only one branch is open, it is simply that one).
   const activeBranches = branches.filter((b) => b.active);
   const lockedBranchId = (isManagerView && !isAdmin) || isStylistView ? user.branch_id : null;
-  const formBranchId = lockedBranchId ?? (Number(form.branchId) || (activeBranches.length === 1 ? activeBranches[0].id : null));
+  // Only an open branch counts as chosen (a remembered or linked branch may have been switched off since).
+  const chosenBranchId = activeBranches.some((b) => b.id === Number(form.branchId)) ? Number(form.branchId) : null;
+  const formBranchId = lockedBranchId ?? (chosenBranchId || (activeBranches.length === 1 ? activeBranches[0].id : null));
   const formBranch = branches.find((b) => b.id === formBranchId) || null;
 
   const isWithinHours = (time, service, branch = formBranch) => {
@@ -115,6 +117,19 @@ export default function Dashboard(props) {
   const cancelAppointment = (a) => {
     askConfirm(`Cancel ${a.client}'s ${a.service} on ${a.date} at ${a.time}?`, () => advanceStatus(a.id, "cancelled"), "Cancel appointment");
   };
+
+  // Arriving from "Book at this branch" on the public page: open the booking form with that branch chosen.
+  useEffect(() => {
+    if (!preferredBranchId || !isClientView) return;
+    const b = branches.find((x) => x.id === preferredBranchId);
+    if (!b) return; // branches are still loading
+    if (b.active) {
+      setForm((f) => ({ ...f, branchId: String(b.id), stylist: "No preference" }));
+      setActiveTab("appointments");
+      setShowForm(true);
+    }
+    onPreferredBranchUsed();
+  }, [preferredBranchId, branches, isClientView]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const leastBookedActiveStylist = (date, branchId = formBranchId) => {
     const active = stylists.filter((s) => s.active && (branchId == null || s.branchId === branchId));
@@ -187,6 +202,7 @@ export default function Dashboard(props) {
       // Swap in the real database id so later status changes / reschedules
       // target a row that actually exists server-side.
       if (result?.id) setAppointments((prev) => prev.map((a) => (a.id === tempId ? { ...newAppt, id: result.id } : a)));
+      if (isClientView && formBranchId) savedBranch.set(formBranchId);
       notify(isClientView ? "Appointment booked." : "Appointment added.");
       if (convertingWaitlistId) removeWaitlistEntry(convertingWaitlistId);
     }
