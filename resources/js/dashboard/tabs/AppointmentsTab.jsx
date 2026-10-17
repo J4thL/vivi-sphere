@@ -75,6 +75,7 @@ export default function AppointmentsTab({ ctx }) {
                   <option value="">Choose a branch…</option>
                   {activeBranches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
+                {formBranch && <div className="dc-subtle text-xs mt-1 max-w-[16rem]">{[formBranch.address, `${formBranch.open_time}–${formBranch.close_time}`].filter(Boolean).join(" · ")}</div>}
               </Field>
             )}
             <Field label="Stylist">

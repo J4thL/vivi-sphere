@@ -37,6 +37,13 @@ export default function App() {
   const sessionEndedRef = useRef(false);
   useEffect(() => { tokenRef.current = token; }, [token]);
   const [resetInfo, setResetInfo] = useState(null);
+  // "Book at this branch" on the public page links to /app/register?branch=ID. It is kept in memory so it
+  // survives moving between the register and login screens, then opens the booking form for that branch.
+  const [preferredBranchId, setPreferredBranchId] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const n = Number(new URLSearchParams(window.location.search).get("branch"));
+    return Number.isInteger(n) && n > 0 ? n : null;
+  });
 
   // When mounted inside the real Laravel app (see spa.blade.php / routes/web.php),
   // the marketing pages are server-rendered Blade views, not this component's
@@ -230,6 +237,7 @@ export default function App() {
         onPasswordChanged={(u) => u && setUser(u)}
         branches={branches} setBranches={setBranches}
         branchServices={branchServices} setBranchServices={setBranchServices}
+        preferredBranchId={preferredBranchId} onPreferredBranchUsed={() => setPreferredBranchId(null)}
       />
     );
     if (user?.must_change_password) {

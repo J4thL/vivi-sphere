@@ -5,6 +5,9 @@
         ['Services', $home . '#services'],
         ['Team', $home . '#team'],
     ];
+    if (isset($branches) && $branches->count() > 1) {
+        array_splice($links, 1, 0, [['Branches', $home . '#branches']]);
+    }
     if (isset($reviews) && request()->routeIs('landing') && $reviews->count()) {
         $links[] = ['Reviews', '#reviews'];
     }

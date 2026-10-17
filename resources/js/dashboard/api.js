@@ -59,6 +59,14 @@ export const savedToken = {
   clear() { try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ } },
 };
 
+/* Remembers the branch a client booked at last, so the next booking starts there. Same try/catch
+ * reasoning as above: storage can be blocked, and the app works fine without it. */
+const BRANCH_KEY = "vivi.branch";
+export const savedBranch = {
+  get() { try { return localStorage.getItem(BRANCH_KEY) || ""; } catch { return ""; } },
+  set(id) { try { localStorage.setItem(BRANCH_KEY, String(id)); } catch { /* ignore */ } },
+};
+
 function firstError(json) {
   const errs = json?.errors;
   if (!errs) return null;

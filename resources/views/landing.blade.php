@@ -47,7 +47,7 @@
                     @foreach ($featuredServices->take(4) as $service)
                         <li class="flex items-center justify-between gap-4 py-3.5 text-sm">
                             <span class="font-medium">{{ $service->name }}</span>
-                            <span class="font-serif text-lg text-wine">₱{{ number_format($service->price, 0) }}</span>
+                            <span class="font-serif text-lg text-wine">@if ($service->price_varies)<span class="mr-1 font-sans text-xs font-normal text-subtle">from</span>@endif₱{{ number_format($service->display_price, 0) }}</span>
                         </li>
                     @endforeach
                 </ul>
@@ -86,7 +86,7 @@
             <div class="section-head">
                 <div class="eyebrow">Services</div>
                 <h2 class="h2 mb-3">What we offer</h2>
-                <p class="lead">Every price is exactly what you'll pay in the chair, no surprises at checkout.</p>
+                <p class="lead">Every price is exactly what you'll pay in the chair, no surprises at checkout.@if ($branches->count() > 1) Some branches have their own prices, so you'll see the exact price when you choose your branch.@endif</p>
             </div>
             <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach ($featuredServices as $service)
@@ -97,7 +97,7 @@
                         <div class="flex flex-1 flex-col gap-3 p-6">
                             <div class="flex items-start justify-between gap-4">
                                 <h3 class="text-xl font-medium leading-snug">{{ $service->name }}</h3>
-                                <div class="font-serif text-2xl text-wine">₱{{ number_format($service->price, 0) }}</div>
+                                <div class="font-serif text-2xl text-wine">@if ($service->price_varies)<span class="mr-1 font-sans text-xs font-normal text-subtle">from</span>@endif₱{{ number_format($service->display_price, 0) }}</div>
                             </div>
                             <div class="mt-auto inline-flex items-center gap-1.5 text-sm text-subtle">
                                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/></svg>
@@ -109,6 +109,41 @@
             </div>
         </div>
     </section>
+
+    {{-- Branches --}}
+    @if ($branches->count() > 1)
+        <section id="branches" class="section scroll-mt-16">
+            <div class="container-page">
+                <div class="section-head">
+                    <div class="eyebrow">Branches</div>
+                    <h2 class="h2 mb-3">Find your nearest branch</h2>
+                    <p class="lead">Choose the branch that suits you, then book your appointment there.</p>
+                </div>
+                <div class="grid gap-5 sm:grid-cols-2">
+                    @foreach ($branches as $branch)
+                        <article class="card card-hover flex flex-col gap-4 p-6">
+                            <h3 class="text-xl font-medium leading-snug">{{ $branch->name }}</h3>
+                            <ul class="space-y-2 text-sm text-subtle">
+                                @if ($branch->address)
+                                    <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-wine" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span>{{ $branch->address }}</span></li>
+                                @endif
+                                @if ($branch->phone)
+                                    <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-wine" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h2.3a1 1 0 011 .8l.7 3.3a1 1 0 01-.5 1.1l-1.6 1a11 11 0 005 5l1-1.6a1 1 0 011.1-.5l3.3.7a1 1 0 01.8 1V19a2 2 0 01-2 2A16 16 0 013 5z"/></svg><a href="tel:{{ preg_replace('/[^0-9+]/', '', $branch->phone) }}" class="hover:text-wine">{{ $branch->phone }}</a></li>
+                                @endif
+                                <li class="flex gap-2"><svg class="mt-0.5 h-4 w-4 shrink-0 text-wine" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/></svg><span>Daily, {{ $fmtTime($branch->open_time) }} – {{ $fmtTime($branch->close_time) }}</span></li>
+                            </ul>
+                            <div class="mt-auto flex flex-wrap items-center gap-3 pt-2">
+                                <a href="{{ url('/app/register?branch=' . $branch->id) }}" class="btn btn-primary">Book at this branch</a>
+                                @if ($branch->address || $branch->map_query)
+                                    <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($branch->map_query ?: $branch->address) }}" target="_blank" rel="noopener" class="text-sm font-medium text-wine underline-offset-2 hover:underline">Get directions<span class="sr-only"> to {{ $branch->name }} (opens in a new tab)</span></a>
+                                @endif
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
 
     {{-- Team --}}
     <section id="team" class="section scroll-mt-16 bg-rosesoft">
@@ -128,7 +163,10 @@
                             </div>
                         @endif
                         <div class="font-semibold">{{ $stylist->name }}</div>
-                        <div class="mb-3 text-sm text-subtle">{{ $stylist->role }}</div>
+                        <div class="text-sm text-subtle {{ $branches->count() > 1 && $stylist->branch ? 'mb-1' : 'mb-3' }}">{{ $stylist->role }}</div>
+                        @if ($branches->count() > 1 && $stylist->branch)
+                            <div class="mb-3 text-xs font-medium text-wine">{{ $stylist->branch->name }}</div>
+                        @endif
                         <span class="inline-flex items-center gap-1 text-sm font-medium text-wine">
                             View profile
                             <svg class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -212,29 +250,38 @@
         <div class="container-page grid gap-8 md:grid-cols-2">
             <div>
                 <div class="eyebrow">Contact</div>
-                <h2 class="h2 mb-8">Visit us</h2>
+                <h2 class="h2 mb-8">{{ $branches->count() > 1 ? 'Get in touch' : 'Visit us' }}</h2>
                 <ul class="space-y-5">
+                    @if ($branches->count() <= 1)
                     <li class="flex gap-4">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-winesoft text-wine"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
                         <div><div class="text-xs font-semibold uppercase tracking-[0.14em] text-subtle">Address</div>{{ $salonSettings->contact_address }}</div>
                     </li>
+                    @endif
                     <li class="flex gap-4">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-winesoft text-wine"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h2.3a1 1 0 011 .8l.7 3.3a1 1 0 01-.5 1.1l-1.6 1a11 11 0 005 5l1-1.6a1 1 0 011.1-.5l3.3.7a1 1 0 01.8 1V19a2 2 0 01-2 2A16 16 0 013 5z"/></svg></span>
                         <div><div class="text-xs font-semibold uppercase tracking-[0.14em] text-subtle">Phone</div><a href="tel:{{ preg_replace('/[^0-9+]/', '', $salonSettings->contact_phone) }}" class="hover:text-wine">{{ $salonSettings->contact_phone }}</a></div>
                     </li>
+                    @if ($branches->count() <= 1)
                     <li class="flex gap-4">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-winesoft text-wine"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/></svg></span>
                         <div><div class="text-xs font-semibold uppercase tracking-[0.14em] text-subtle">Hours</div>Daily, {{ $fmtTime($salonSettings->open_time) }} – {{ $fmtTime($salonSettings->close_time) }}</div>
                     </li>
+                    @endif
                 </ul>
+                @if ($branches->count() > 1)
+                    <p class="mt-6 text-sm text-subtle">Each branch has its own address and opening hours. <a href="#branches" class="font-medium text-wine underline-offset-2 hover:underline">See all branches</a>.</p>
+                @endif
                 @if ($salonSettings->cancellation_policy)
                     <p class="mt-8 rounded-xl bg-rosesoft px-4 py-3 text-sm leading-relaxed text-subtle">{{ $salonSettings->cancellation_policy }}</p>
                 @endif
             </div>
+            @if ($branches->count() <= 1)
             <div class="card min-h-[280px] overflow-hidden md:min-h-[360px]">
                 <iframe title="Salon location map" width="100%" height="100%" class="h-full min-h-[280px] w-full border-0 md:min-h-[360px]" loading="lazy"
                     src="https://maps.google.com/maps?q={{ urlencode($salonSettings->map_query ?? $salonSettings->contact_address) }}&output=embed"></iframe>
             </div>
+            @endif
         </div>
     </section>
 @endsection
