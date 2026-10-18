@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\Review;
 use App\Models\WaitlistEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ClientController extends Controller
 {
@@ -51,7 +53,7 @@ class ClientController extends Controller
             ?->{$relation}?->name;
 
         return response()->json([
-            'client' => $client,
+            'client' => $client->makeVisible('notes'),
             'visits' => $visits,
             'favourite_service' => $favourite('service_id', 'service'),
             'favourite_stylist' => $favourite('stylist_id', 'stylist'),
@@ -61,5 +63,65 @@ class ClientController extends Controller
             'waitlist' => WaitlistEntry::with(['service:id,name', 'stylist:id,name'])->where('client_id', $client->id)->where('status', 'waiting')->orderBy('preferred_date')->get()
                 ->map(fn (WaitlistEntry $w) => ['id' => $w->id, 'service' => $w->service?->name, 'stylist' => $w->stylist?->name, 'preferred_date' => $w->preferred_date?->toDateString()]),
         ]);
+    }
+
+    /**
+     * A manager corrects a client's name or phone and keeps private notes. Visits, spend and last visit
+     * are system-controlled and are never read from the request. A phone number that already belongs to
+     * another client is refused unless the manager confirms (families can share a number).
+     */
+    public function update(Request $request, Client $client)
+    {
+        abort_unless($request->user()->isManager(), 403);
+
+        $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'confirm_duplicate' => ['sometimes', 'boolean'],
+        ]);
+
+        foreach (['name', 'phone', 'notes'] as $field) {
+            if (array_key_exists($field, $data) && is_string($data[$field])) {
+                $data[$field] = trim($data[$field]);
+            }
+        }
+        abort_if(array_key_exists('name', $data) && $data['name'] === '', 422, 'Please enter a name.');
+        foreach (['phone', 'notes'] as $field) {
+            if (array_key_exists($field, $data) && $data[$field] === '') {
+                $data[$field] = null;
+            }
+        }
+
+        if (! empty($data['phone']) && ! $request->boolean('confirm_duplicate')) {
+            $digits = preg_replace('/\D+/', '', $data['phone']);
+            $same = Client::where('id', '!=', $client->id)->whereNotNull('phone')
+                ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', ''), '(', ''), ')', '') = ?", [$digits])
+                ->get(['id', 'name']);
+            if ($digits !== '' && $same->isNotEmpty()) {
+                return response()->json([
+                    'message' => 'Another client already uses this phone number: '.$same->pluck('name')->implode(', ').'.',
+                    'code' => 'duplicate_phone',
+                    'duplicates' => $same,
+                ], 422);
+            }
+        }
+
+        DB::transaction(function () use ($request, $client, $data) {
+            $client->fill(collect($data)->only(['name', 'phone', 'notes'])->all());
+            $changed = array_keys($client->getDirty());
+            $client->save();
+            // A client with a login keeps the same name on both records.
+            if (in_array('name', $changed, true) && $client->user_id) {
+                $client->user()->update(['name' => $client->name]);
+            }
+            if ($changed) {
+                // Which fields changed, not their values: notes can hold private details.
+                AuditLog::record($request->user(), 'client.updated', $client, ['fields' => $changed]);
+            }
+
+        });
+
+        return response()->json($client->fresh()->makeVisible('notes'));
     }
 }
