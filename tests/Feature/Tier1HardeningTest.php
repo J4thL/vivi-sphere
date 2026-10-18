@@ -35,7 +35,7 @@ class Tier1HardeningTest extends TestCase
 
     private function appointment(Client $client, string $when, string $status = 'confirmed', ?Stylist $stylist = null): Appointment
     {
-        return Appointment::create(['branch_id' => 1, 
+        return Appointment::create(['branch_id' => 1,
             'client_id' => $client->id, 'stylist_id' => ($stylist ?? $this->stylist())->id, 'service_id' => $this->service()->id,
             'scheduled_at' => $when, 'status' => $status, 'price' => 50,
         ]);

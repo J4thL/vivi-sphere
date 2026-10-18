@@ -20,7 +20,7 @@ class Tier2PerformanceTest extends TestCase
 
     private function appt(Client $c, Stylist $s, Service $svc, string $when, string $status = 'confirmed'): Appointment
     {
-        return Appointment::create(['branch_id' => 1, 
+        return Appointment::create(['branch_id' => 1,
             'client_id' => $c->id, 'stylist_id' => $s->id, 'service_id' => $svc->id,
             'scheduled_at' => $when, 'status' => $status, 'price' => 50,
         ]);

@@ -131,7 +131,7 @@ class ApiFlowsTest extends TestCase
         $admin = $this->user('admin');
         Sanctum::actingAs($admin);
         $client = Client::create(['name' => 'Repeat']);
-        $appt = Appointment::create(['branch_id' => 1, 
+        $appt = Appointment::create(['branch_id' => 1,
             'client_id' => $client->id, 'stylist_id' => $this->stylist()->id, 'service_id' => $this->service()->id,
             'scheduled_at' => $this->nextWeekdayAt('10:00'), 'status' => 'confirmed', 'price' => 50,
         ]);
@@ -149,7 +149,7 @@ class ApiFlowsTest extends TestCase
         $other = $this->user('client');
         $myClient = Client::create(['user_id' => $mine->id, 'name' => $mine->name]);
         $otherClient = Client::create(['user_id' => $other->id, 'name' => $other->name]);
-        $mk = fn ($c) => Appointment::create(['branch_id' => 1, 
+        $mk = fn ($c) => Appointment::create(['branch_id' => 1,
             'client_id' => $c->id, 'stylist_id' => $this->stylist()->id, 'service_id' => $this->service()->id,
             'scheduled_at' => $this->nextWeekdayAt('10:00'), 'status' => 'confirmed', 'price' => 50,
         ]);
@@ -208,7 +208,7 @@ class ApiFlowsTest extends TestCase
     {
         $client = Client::create(['name' => 'Rev']);
         $stylist = $this->stylist();
-        $appt = fn () => Appointment::create(['branch_id' => 1, 
+        $appt = fn () => Appointment::create(['branch_id' => 1,
             'client_id' => $client->id, 'stylist_id' => $stylist->id, 'service_id' => $this->service()->id,
             'scheduled_at' => $this->nextWeekdayAt('10:00'), 'status' => 'completed', 'price' => 50,
         ]);

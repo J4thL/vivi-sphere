@@ -19,10 +19,15 @@ class BranchBookingTest extends TestCase
     use RefreshDatabase;
 
     private Branch $a;
+
     private Branch $b;
+
     private Stylist $ana;
+
     private Stylist $ben;
+
     private Service $service;
+
     private string $day;
 
     protected function setUp(): void

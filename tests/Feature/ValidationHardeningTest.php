@@ -138,7 +138,7 @@ class ValidationHardeningTest extends TestCase
     {
         $client = Client::create(['name' => $user->name, 'user_id' => $user->id]);
 
-        return Appointment::create(['branch_id' => 1, 
+        return Appointment::create(['branch_id' => 1,
             'client_id' => $client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id,
             'scheduled_at' => now()->subDay()->format('Y-m-d').' 10:00:00', 'status' => 'completed', 'price' => 50,
         ]);

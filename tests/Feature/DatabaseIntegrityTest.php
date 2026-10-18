@@ -37,7 +37,7 @@ class DatabaseIntegrityTest extends TestCase
 
     private function appt(string $time, array $extra = []): Appointment
     {
-        return Appointment::create($extra + ['branch_id' => 1, 
+        return Appointment::create($extra + ['branch_id' => 1,
             'client_id' => $this->client->id, 'stylist_id' => $this->stylist->id, 'service_id' => $this->service->id,
             'scheduled_at' => "{$this->day} $time", 'status' => 'confirmed', 'price' => 50,
         ]);

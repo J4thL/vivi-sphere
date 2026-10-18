@@ -51,7 +51,7 @@ class BookingIntegrityTest extends TestCase
 
     private function appt(string $time, string $status = 'confirmed', ?Stylist $stylist = null): Appointment
     {
-        return Appointment::create(['branch_id' => 1, 
+        return Appointment::create(['branch_id' => 1,
             'client_id' => $this->client->id, 'stylist_id' => ($stylist ?? $this->stylist)->id, 'service_id' => $this->service->id,
             'scheduled_at' => "{$this->day} {$time}", 'status' => $status, 'price' => 50,
         ]);

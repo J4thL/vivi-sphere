@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Appointment;
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\BranchService;
 use App\Models\Client;
@@ -19,11 +20,17 @@ class BranchServiceTest extends TestCase
     use RefreshDatabase;
 
     private Branch $a;
+
     private Branch $b;
+
     private Stylist $ana;
+
     private Stylist $ben;
+
     private Service $cut;
+
     private Service $color;
+
     private string $day;
 
     protected function setUp(): void
@@ -142,6 +149,6 @@ class AuditCount
 {
     public static function of(string $prefix): int
     {
-        return \App\Models\AuditLog::where('action', 'like', $prefix.'%')->count();
+        return AuditLog::where('action', 'like', $prefix.'%')->count();
     }
 }

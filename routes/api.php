@@ -2,9 +2,9 @@
 
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\BranchServiceController;
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\InventoryController;
 use App\Http\Controllers\Api\PasswordResetController;
@@ -42,7 +42,7 @@ Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
-    Route::post('/auth/resend-verification',[AuthController::class, 'resendVerification']);
+    Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword'])->middleware('throttle:password-reset');
 
     Route::middleware('throttle:bookings')->group(function () {

@@ -45,7 +45,7 @@ class CoverageGapsTest extends TestCase
 
     private function appt(Stylist $stylist, string $time, ?Client $client = null): Appointment
     {
-        return Appointment::create(['branch_id' => 1, 
+        return Appointment::create(['branch_id' => 1,
             'client_id' => ($client ?? Client::create(['name' => 'C'.uniqid()]))->id, 'stylist_id' => $stylist->id,
             'service_id' => $this->service->id, 'scheduled_at' => "{$this->day} $time", 'status' => 'confirmed', 'price' => 50,
         ]);

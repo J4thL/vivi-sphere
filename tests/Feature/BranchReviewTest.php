@@ -19,7 +19,9 @@ class BranchReviewTest extends TestCase
     use RefreshDatabase;
 
     private Branch $b;
+
     private Review $atMain;
+
     private Review $atSecond;
 
     protected function setUp(): void
