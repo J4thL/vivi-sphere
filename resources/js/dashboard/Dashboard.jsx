@@ -210,6 +210,17 @@ export default function Dashboard(props) {
     resetForm();
   };
 
+  // "Book" on a client row: open the booking form already set to that client's record.
+  const bookForClient = (c) => { resetForm(); setForm({ ...emptyForm, client: c.name, clientId: c.id }); setActiveTab("appointments"); setShowForm(true); };
+  // "Book again" on a past visit: same service, stylist (if still working) and branch, with a new date.
+  const rebook = (a) => {
+    resetForm();
+    const stylistStillActive = stylists.some((s) => s.active && s.name === a.stylist);
+    setForm({ ...emptyForm, service: services[a.service] ? a.service : emptyForm.service, stylist: stylistStillActive ? a.stylist : "No preference", branchId: a.branchId ?? emptyForm.branchId });
+    setActiveTab("appointments");
+    setShowForm(true);
+  };
+
   const startReschedule = (a) => { setEditingId(a.id); setForm({ client: a.client, clientId: null, newClient: false, service: a.service, stylist: a.stylist, branchId: a.branchId ?? "", date: a.date, time: a.time }); setFormError(""); setShowForm(true); };
 
   const toggleStylistActive = (id) => {
@@ -465,7 +476,7 @@ export default function Dashboard(props) {
 
   // Everything the tab components need, in one place.
   const ctx = {
-    token, notify, onPasswordChanged, saveProfile, myUpcoming, upcomingAppointments, pastAppointments, myPendingReviews, branches, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
+    token, notify, onPasswordChanged, saveProfile, bookForClient, rebook, myUpcoming, upcomingAppointments, pastAppointments, myPendingReviews, branches, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,

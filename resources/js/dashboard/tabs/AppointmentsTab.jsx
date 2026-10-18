@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, Play, Plus, X } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, Play, Plus, RotateCcw, X } from "lucide-react";
 import { STATUS_META, addDays, formatMoney, initials, statusColor, todayStr } from "../helpers.js";
 import { useTheme } from "../theme.jsx";
 import { Field, IconBtn } from "../ui.jsx";
@@ -7,7 +7,7 @@ import { Field, IconBtn } from "../ui.jsx";
 export default function AppointmentsTab({ ctx }) {
   const { colors } = useTheme();
   const [showPast, setShowPast] = useState(false);
-  const { upcomingAppointments, pastAppointments, termsFor, activeBranches, branches, lockedBranchId, formBranch, user, isAdmin, advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
+  const { rebook, upcomingAppointments, pastAppointments, termsFor, activeBranches, branches, lockedBranchId, formBranch, user, isAdmin, advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
   // Filtering by Completed or Cancelled is a clear ask for history, so the past section opens by itself.
   const pastOpen = showPast || statusFilter === "completed" || statusFilter === "cancelled";
   const renderRow = (a) => (
@@ -22,6 +22,7 @@ export default function AppointmentsTab({ ctx }) {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span style={{ color: statusColor(a.status, colors) }} className="text-xs font-medium w-20 text-right hidden sm:block">{STATUS_META[a.status].label}</span>
+              {isClientView && (a.status === "completed" || a.status === "cancelled") && <IconBtn onClick={() => rebook(a)} title="Book again" icon={RotateCcw} color={colors.wine} />}
               {a.status === "confirmed" && <IconBtn onClick={() => startReschedule(a)} title="Reschedule" icon={Pencil} color={colors.subtle} />}
               {!isClientView && a.status === "confirmed" && <IconBtn onClick={() => advanceStatus(a.id, "in-progress")} title="Start" icon={Play} color={colors.rose} />}
               {!isClientView && a.status === "in-progress" && <IconBtn onClick={() => advanceStatus(a.id, "completed")} title="Complete" icon={Check} color={colors.success} />}
