@@ -157,9 +157,15 @@ export function normalizeClient(c) {
     phone: c.phone || "-",
     visits: c.visits ?? 0,
     lastVisit: c.last_visit_at !== undefined ? relativeLastVisit(c.last_visit_at) : c.lastVisit,
+    lastVisitAt: c.last_visit_at ?? c.lastVisitAt ?? null,
     spend: Number(c.spend) || 0,
   };
 }
+
+// A client counts as VIP above this lifetime spend, and as lapsed after this many days without a visit.
+export const VIP_SPEND = 1000;
+export const LAPSED_DAYS = 60;
+export function daysSince(iso) { return iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) : null; }
 
 export function normalizeInventoryItem(i) {
   return {
