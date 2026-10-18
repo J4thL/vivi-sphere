@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CalendarPlus, Phone, Search } from "lucide-react";
+import ClientDetailPanel from "../ClientDetailPanel.jsx";
 import { LAPSED_DAYS, VIP_SPEND, daysSince, formatMoney, initials } from "../helpers.js";
 import { useTheme } from "../theme.jsx";
 
@@ -19,7 +20,8 @@ const exactDate = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { 
 
 export default function ClientsTab({ ctx }) {
   const { colors } = useTheme();
-  const { bookForClient, clientSearch, clients, filteredClients, setClientSearch } = ctx;
+  const { bookForClient, clientSearch, clients, filteredClients, setClientSearch, token } = ctx;
+  const [open, setOpen] = useState(null);
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("spend");
   const rows = filteredClients.filter(FILTERS.find((f) => f.key === filter).test).sort(SORTS.find((s) => s.key === sort).cmp);
@@ -56,7 +58,7 @@ export default function ClientsTab({ ctx }) {
         {rows.map((c) => (
           <div key={c.id ?? c.name} style={{ borderBottom: `1px solid ${colors.border}` }} className="p-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-sm font-medium"><span className="truncate">{c.name}</span>{vipBadge(c)}</div>
+              <div className="flex items-center gap-2 text-sm font-medium"><button onClick={() => c.id && setOpen(c)} className="truncate text-left underline-offset-2 hover:underline">{c.name}</button>{vipBadge(c)}</div>
               <div className="dc-subtle text-xs mt-0.5">{hasPhone(c) ? c.phone : "No phone"}</div>
               <div className="text-xs mt-1">{c.visits} visit{c.visits === 1 ? "" : "s"} · {formatMoney(c.spend)} · <span className="dc-subtle" title={exactDate(c.lastVisitAt)}>{c.lastVisit}</span></div>
             </div>
@@ -84,7 +86,7 @@ export default function ClientsTab({ ctx }) {
                 <td className="py-3 px-5">
                   <div className="flex items-center gap-2">
                     <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium">{initials(c.name)}</div>
-                    {c.name}
+                    <button onClick={() => c.id && setOpen(c)} className="text-left underline-offset-2 hover:underline">{c.name}</button>
                     {vipBadge(c)}
                   </div>
                 </td>
@@ -99,6 +101,7 @@ export default function ClientsTab({ ctx }) {
           </tbody>
         </table>
       </div>
+      {open && <ClientDetailPanel client={open} token={token} onClose={() => setOpen(null)} onBook={(c) => { setOpen(null); bookForClient(c); }} />}
     </div>
   );
 }
