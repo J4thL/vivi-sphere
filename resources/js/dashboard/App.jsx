@@ -125,8 +125,8 @@ export default function App() {
         isManager || user?.role === "client" ? apiGet("/clients", token) : skip,
         isManager ? apiGet("/inventory", token) : skip,
         user?.role === "admin" ? apiGet("/audit-log", token) : skip,
-        isManager ? apiGet("/waitlist", token) : skip,
-        isManager ? apiGet("/reviews", token) : skip, // managers also see pending/rejected reviews
+        isManager || user?.role === "client" ? apiGet("/waitlist", token) : skip, // a client gets only their own requests
+        isManager || user?.role === "client" ? apiGet("/reviews", token) : skip, // managers see all; a client also sees their own pending/rejected ones
         apiGet(user?.role === "admin" ? "/branches?include_inactive=1" : "/branches", token),
       ]);
       if (br) setBranches(br);
@@ -235,6 +235,7 @@ export default function App() {
         notify={notify} notice={notice} askConfirm={askConfirm}
         resendVerification={resendVerification}
         onPasswordChanged={(u) => u && setUser(u)}
+        onUserUpdated={(u) => u && setUser(u)}
         branches={branches} setBranches={setBranches}
         branchServices={branchServices} setBranchServices={setBranchServices}
         preferredBranchId={preferredBranchId} onPreferredBranchUsed={() => setPreferredBranchId(null)}

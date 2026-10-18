@@ -206,7 +206,12 @@ class ResourceCoverageTest extends TestCase
 
         foreach (['client', 'stylist'] as $role) {
             $this->as($role);
-            $this->getJson('/api/waitlist')->assertForbidden();
+            // A client may open the list, but it holds only their own requests (see MyAccountTest); stylists stay blocked.
+            if ($role === 'client') {
+                $this->getJson('/api/waitlist')->assertOk()->assertJsonCount(0);
+            } else {
+                $this->getJson('/api/waitlist')->assertForbidden();
+            }
             $this->deleteJson("/api/waitlist/{$entry->id}")->assertForbidden();
         }
         $this->assertSame('waiting', $entry->fresh()->status);

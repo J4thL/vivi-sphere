@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Pencil, Play, Plus, X } from "lucide-react";
 import { STATUS_META, addDays, formatMoney, initials, statusColor, todayStr } from "../helpers.js";
 import { useTheme } from "../theme.jsx";
@@ -5,7 +6,29 @@ import { Field, IconBtn } from "../ui.jsx";
 
 export default function AppointmentsTab({ ctx }) {
   const { colors } = useTheme();
-  const { termsFor, activeBranches, branches, lockedBranchId, formBranch, user, isAdmin, advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
+  const [showPast, setShowPast] = useState(false);
+  const { upcomingAppointments, pastAppointments, termsFor, activeBranches, branches, lockedBranchId, formBranch, user, isAdmin, advanceStatus, busy, cancelAppointment, clients, convertWaitlistEntry, durationOf, editingId, filteredAppointments, form, formError, isClientView, isManagerView, isStylistView, joinWaitlist, landingContent, priceOf, removeWaitlistEntry, resetForm, setFormError, selectedDate, services, setForm, setSelectedDate, setShowForm, setStatusFilter, setStylistFilter, showForm, startReschedule, statusFilter, stylistFilter, stylists, submitAppointment, waitlist } = ctx;
+  // Filtering by Completed or Cancelled is a clear ask for history, so the past section opens by itself.
+  const pastOpen = showPast || statusFilter === "completed" || statusFilter === "cancelled";
+  const renderRow = (a) => (
+          <div key={a.id} style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center justify-between px-3 py-3 text-sm gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="dc-subtle w-16 flex-shrink-0 text-xs">{isClientView || !isStylistView ? a.date.slice(5) : ""} {a.time}</span>
+              <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">{initials(isClientView ? a.service : a.client)}</div>
+              <div className="min-w-0">
+                <div className="font-medium truncate">{isClientView ? a.service : a.client}</div>
+                <div className="dc-subtle text-xs truncate">{isClientView ? `with ${a.stylist}` : `${a.service} · ${a.stylist}`}{(isAdmin || isClientView) && branches.find((b) => b.id === a.branchId) ? ` · ${branches.find((b) => b.id === a.branchId).name}` : ""} · {formatMoney(a.price ?? priceOf(a.service))} · {(a.duration ?? durationOf(a.service))}m</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span style={{ color: statusColor(a.status, colors) }} className="text-xs font-medium w-20 text-right hidden sm:block">{STATUS_META[a.status].label}</span>
+              {a.status === "confirmed" && <IconBtn onClick={() => startReschedule(a)} title="Reschedule" icon={Pencil} color={colors.subtle} />}
+              {!isClientView && a.status === "confirmed" && <IconBtn onClick={() => advanceStatus(a.id, "in-progress")} title="Start" icon={Play} color={colors.rose} />}
+              {!isClientView && a.status === "in-progress" && <IconBtn onClick={() => advanceStatus(a.id, "completed")} title="Complete" icon={Check} color={colors.success} />}
+              {(a.status === "confirmed" || (!isClientView && a.status === "in-progress")) && <IconBtn onClick={() => cancelAppointment(a)} title="Cancel" icon={X} color={colors.danger} />}
+            </div>
+          </div>
+  );
   return (
     <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl dash-card">
       {(isManagerView || isStylistView) && (
@@ -105,27 +128,37 @@ export default function AppointmentsTab({ ctx }) {
       )}
 
       <div className="p-2">
-        {filteredAppointments.length === 0 && <div className="dc-subtle text-sm text-center py-14 flex flex-col items-center gap-2"><CalendarDays size={28} style={{ color: colors.rose }} />No appointments match these filters.</div>}
-        {filteredAppointments.map((a) => (
-          <div key={a.id} style={{ borderBottom: `1px solid ${colors.border}` }} className="flex items-center justify-between px-3 py-3 text-sm gap-2">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="dc-subtle w-16 flex-shrink-0 text-xs">{isClientView || !isStylistView ? a.date.slice(5) : ""} {a.time}</span>
-              <div style={{ background: colors.roseSoft, color: colors.wine }} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">{initials(isClientView ? a.service : a.client)}</div>
-              <div className="min-w-0">
-                <div className="font-medium truncate">{isClientView ? a.service : a.client}</div>
-                <div className="dc-subtle text-xs truncate">{isClientView ? `with ${a.stylist}` : `${a.service} · ${a.stylist}`}{(isAdmin || isClientView) && branches.find((b) => b.id === a.branchId) ? ` · ${branches.find((b) => b.id === a.branchId).name}` : ""} · {formatMoney(a.price ?? priceOf(a.service))} · {(a.duration ?? durationOf(a.service))}m</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span style={{ color: statusColor(a.status, colors) }} className="text-xs font-medium w-20 text-right hidden sm:block">{STATUS_META[a.status].label}</span>
-              {a.status === "confirmed" && <IconBtn onClick={() => startReschedule(a)} title="Reschedule" icon={Pencil} color={colors.subtle} />}
-              {!isClientView && a.status === "confirmed" && <IconBtn onClick={() => advanceStatus(a.id, "in-progress")} title="Start" icon={Play} color={colors.rose} />}
-              {!isClientView && a.status === "in-progress" && <IconBtn onClick={() => advanceStatus(a.id, "completed")} title="Complete" icon={Check} color={colors.success} />}
-              {(a.status === "confirmed" || (!isClientView && a.status === "in-progress")) && <IconBtn onClick={() => cancelAppointment(a)} title="Cancel" icon={X} color={colors.danger} />}
-            </div>
-          </div>
-        ))}
+        {filteredAppointments.length === 0 && <div className="dc-subtle text-sm text-center py-14 flex flex-col items-center gap-2"><CalendarDays size={28} style={{ color: colors.rose }} />{isClientView ? "No visits here yet." : "No appointments match these filters."}</div>}
+        {isClientView ? (
+          <>
+            {upcomingAppointments.length > 0 && <div className="dc-subtle text-[11px] font-semibold uppercase tracking-wide px-3 pt-2 pb-1">Upcoming</div>}
+            {upcomingAppointments.map(renderRow)}
+            {pastAppointments.length > 0 && (
+              <>
+                <button onClick={() => setShowPast((v) => !v)} aria-expanded={pastOpen} className="dc-subtle text-[11px] font-semibold uppercase tracking-wide px-3 pt-4 pb-1 flex items-center gap-1">
+                  Past visits ({pastAppointments.length}) <span aria-hidden="true">{pastOpen ? "▾" : "▸"}</span>
+                </button>
+                {pastOpen && pastAppointments.map(renderRow)}
+              </>
+            )}
+          </>
+        ) : filteredAppointments.map(renderRow)}
       </div>
+
+      {isClientView && waitlist.length > 0 && (
+        <div style={{ borderTop: `1px solid ${colors.border}` }} className="p-5">
+          <div className="font-display text-base mb-1">Your waitlist requests</div>
+          <div className="dc-subtle text-xs mb-3">We'll reach out if a slot opens. Remove a request if you no longer need it.</div>
+          <div className="flex flex-col gap-2">
+            {waitlist.map((w) => (
+              <div key={w.id} style={{ border: `1px solid ${colors.border}` }} className="flex items-center justify-between gap-2 px-3 py-2 rounded-md text-sm">
+                <span className="min-w-0">{w.service} &middot; wants {w.preferredDate}{w.stylist ? ` with ${w.stylist}` : ""}{branches.find((b) => b.id === w.branchId) ? ` · ${branches.find((b) => b.id === w.branchId).name}` : ""}</span>
+                <IconBtn onClick={() => removeWaitlistEntry(w.id)} title="Remove request" icon={X} color={colors.danger} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isManagerView && waitlist.length > 0 && (
         <div style={{ borderTop: `1px solid ${colors.border}` }} className="p-5">

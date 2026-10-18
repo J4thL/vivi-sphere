@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { X } from "lucide-react";
 import { useTheme } from "../theme.jsx";
 import ChangePasswordCard from "../ChangePasswordCard.jsx";
@@ -12,9 +13,37 @@ const commitIfChanged = (e, current, save) => {
   save(next);
 };
 
+// A client's own details. Name and phone can be changed; email is the login, so it stays read-only here.
+function ClientProfileForm({ user, phone, saving, onSave }) {
+  const { colors } = useTheme();
+  const savedPhone = phone && phone !== "-" ? phone : "";
+  const [name, setName] = useState(user.name);
+  const [tel, setTel] = useState(savedPhone);
+  const [error, setError] = useState("");
+  const input = { border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink };
+  const dirty = name.trim() !== user.name || tel.trim() !== savedPhone;
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) { setError("Please enter your name."); return; }
+    setError("");
+    await onSave({ name: name.trim(), phone: tel.trim() });
+  };
+  return (
+    <form onSubmit={submit}>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} maxLength={255} autoComplete="name" style={input} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
+        <Field label="Phone"><input type="tel" value={tel} onChange={(e) => setTel(e.target.value)} maxLength={50} autoComplete="tel" placeholder="Optional" style={input} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
+        <Field label="Email"><input value={user.email} disabled style={input} className="px-2 py-1.5 rounded-md text-sm w-full opacity-70" /></Field>
+      </div>
+      {error && <div role="alert" className="dc-danger text-xs mt-3">{error}</div>}
+      <button type="submit" disabled={saving || !dirty} className="btn-wine px-4 py-2 rounded-md text-sm font-medium mt-4 disabled:opacity-60 disabled:cursor-not-allowed">{saving ? "Saving…" : "Save changes"}</button>
+    </form>
+  );
+}
+
 export default function SettingsTab({ ctx }) {
   const { colors } = useTheme();
-  const { addService, busy, currentStylist, deleteService, isAdmin, isClientView, isManagerView, isStylistView, newService, saveSalonInfo, savedMsg, services, setNewService, setSiteDraft, siteDraft, updateServiceDuration, updateServicePrice, user, token, notify, onPasswordChanged } = ctx;
+  const { addService, busy, currentStylist, deleteService, isAdmin, isClientView, isManagerView, isStylistView, newService, saveSalonInfo, savedMsg, services, setNewService, setSiteDraft, siteDraft, updateServiceDuration, updateServicePrice, user, token, notify, onPasswordChanged, saveProfile, myClientRecord } = ctx;
   return (
     <div className="flex flex-col gap-4 max-w-2xl">
       <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card">
@@ -28,12 +57,7 @@ export default function SettingsTab({ ctx }) {
         )}
         {isManagerView && !isAdmin && <div className="dc-subtle text-sm">Salon profile and pricing are managed by an admin. You can still manage appointments, clients, stylists, and inventory.</div>}
         {isStylistView && <div className="dc-subtle text-sm">{currentStylist?.name} · {currentStylist?.role}. Availability is managed by the front desk.</div>}
-        {isClientView && (
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="Name"><input value={user.name} disabled style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full opacity-70" /></Field>
-            <Field label="Email"><input value={user.email} disabled style={{ border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink }} className="px-2 py-1.5 rounded-md text-sm w-full opacity-70" /></Field>
-          </div>
-        )}
+        {isClientView && <ClientProfileForm key={`${user.name}|${myClientRecord?.phone}`} user={user} phone={myClientRecord?.phone} saving={!!busy.profile} onSave={saveProfile} />}
         {isAdmin && (
           <div className="flex items-center gap-3 mt-4">
             <button onClick={saveSalonInfo} className="btn-wine px-4 py-2 rounded-md text-sm font-medium">Save changes</button>

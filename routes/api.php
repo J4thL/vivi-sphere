@@ -41,7 +41,8 @@ Route::post('/auth/reset-password', [PasswordResetController::class, 'reset'])->
 Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
-    Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification']);
+    Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/resend-verification',[AuthController::class, 'resendVerification']);
     Route::post('/auth/change-password', [AuthController::class, 'changePassword'])->middleware('throttle:password-reset');
 
     Route::middleware('throttle:bookings')->group(function () {

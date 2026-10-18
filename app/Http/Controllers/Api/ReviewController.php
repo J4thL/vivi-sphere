@@ -29,11 +29,19 @@ class ReviewController extends Controller
         // "review this visit" prompts for visits they already reviewed.
         $ownClientId = $user?->isClient() ? $user->client?->id : null;
 
-        return Review::with(['client:id,name', 'stylist:id,name,branch_id'])
+        $approved = Review::with(['client:id,name', 'stylist:id,name,branch_id'])
             ->where('status', 'approved')
             ->latest()
             ->limit(config('salon.public_reviews_max'))
-            ->get()
+            ->get();
+
+        // A signed-in client also gets their OWN reviews that are still pending or were rejected, so the
+        // dashboard can show their status instead of asking them to review the same visit again.
+        $ownOther = $ownClientId === null ? collect() : Review::with(['client:id,name', 'stylist:id,name,branch_id'])
+            ->where('client_id', $ownClientId)->where('status', '!=', 'approved')
+            ->latest()->limit(config('salon.public_reviews_max'))->get();
+
+        return $approved->concat($ownOther)
             ->map(function (Review $review) use ($ownClientId) {
                 $row = [
                     'id' => $review->id,

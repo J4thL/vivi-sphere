@@ -1,22 +1,22 @@
 import { Suspense } from "react";
 import { Star } from "lucide-react";
-import { STATUS_META, formatMoney, statusColor } from "../helpers.js";
+import { STATUS_META, formatDateLabel, formatMoney, statusColor } from "../helpers.js";
 import { ChartPlaceholder, StatusPieChart, WeeklyRevenueChart } from "../lazyCharts.jsx";
 import { serifFont, useTheme } from "../theme.jsx";
 import { StatCard } from "../ui.jsx";
 
 export default function OverviewTab({ ctx }) {
   const { colors } = useTheme();
-  const { activeCount, countTrend, currentStylist, isClientView, isManagerView, isStylistView, leaderboard, myClientRecord, newClientsToday, occupancyRate, overviewPreview, resetForm, revenueTrend, reviewDraft, reviewableAppointments, scopedAppointments, setActiveTab, setReviewDraft, setShowForm, statusBreakdown, submitReview, todaysRevenue, weeklyRevenue } = ctx;
+  const { activeCount, countTrend, currentStylist, isClientView, isManagerView, isStylistView, leaderboard, myClientRecord, myPendingReviews, myUpcoming, newClientsToday, occupancyRate, overviewPreview, resetForm, revenueTrend, reviewDraft, reviewableAppointments, setActiveTab, setReviewDraft, setShowForm, statusBreakdown, submitReview, todaysRevenue, weeklyRevenue } = ctx;
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard label={isClientView ? "Total spent" : isStylistView ? "My revenue today" : "Today's revenue"} value={isClientView ? formatMoney(myClientRecord?.spend || 0) : formatMoney(todaysRevenue)} sub={isClientView ? "lifetime with us" : "vs. yesterday"} trend={isClientView ? null : revenueTrend} />
         <StatCard label={isClientView ? "Visits" : isStylistView ? "My appointments" : "Appointments today"} value={isClientView ? (myClientRecord?.visits || 0) : activeCount} sub={isClientView ? "all time" : "vs. yesterday"} trend={isClientView ? null : countTrend} />
-        {isClientView && <StatCard label="Upcoming" value={scopedAppointments.filter((a) => a.status === "confirmed").length} sub="confirmed bookings" />}
+        {isClientView && <StatCard label="Upcoming" value={myUpcoming.length} sub="visits booked" />}
         {!isClientView && !isStylistView && <StatCard label="New clients" value={newClientsToday} sub="first visit today" />}
         {isStylistView && <StatCard label="Chair status" value={currentStylist?.active ? "Active" : "Off today"} sub="set by front desk" />}
-        <StatCard label={isClientView ? "Favorite service" : isStylistView ? "My occupancy" : "Chair occupancy"} value={isClientView ? (scopedAppointments[0]?.service || "-") : `${occupancyRate}%`} sub={isClientView ? "most recent booking" : "of available slots"} />
+        <StatCard label={isClientView ? "Next visit" : isStylistView ? "My occupancy" : "Chair occupancy"} value={isClientView ? (myUpcoming[0] ? formatDateLabel(myUpcoming[0].date) : "-") : `${occupancyRate}%`} sub={isClientView ? (myUpcoming[0] ? `${myUpcoming[0].time} · ${myUpcoming[0].service}` : "nothing booked yet") : "of available slots"} />
       </div>
 
       {isClientView && reviewableAppointments.length > 0 && (
@@ -43,6 +43,20 @@ export default function OverviewTab({ ctx }) {
         </div>
       )}
 
+      {isClientView && myPendingReviews.length > 0 && (
+        <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="rounded-xl p-5 dash-card mb-6">
+          <div className="font-display text-lg mb-3">Your reviews</div>
+          <div className="flex flex-col gap-2">
+            {myPendingReviews.map((r) => (
+              <div key={r.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="truncate">{r.rating}★ for {r.stylistName}{r.comment ? ` · “${r.comment}”` : ""}</span>
+                <span style={{ color: r.status === "rejected" ? colors.danger : colors.subtle }} className="text-xs font-medium flex-shrink-0">{r.status === "rejected" ? "Not published" : "Awaiting approval"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         <div style={{ background: colors.cardBg, border: `1px solid ${colors.border}` }} className="md:col-span-2 rounded-xl p-5 dash-card">
           <div className="flex items-center justify-between mb-4">
@@ -60,7 +74,7 @@ export default function OverviewTab({ ctx }) {
                 <span style={{ color: statusColor(a.status, colors) }} className="text-xs font-medium flex-shrink-0">{STATUS_META[a.status].label}</span>
               </div>
             ))}
-            {overviewPreview.length === 0 && <div className="dc-subtle text-sm">Nothing on the books yet.</div>}
+            {overviewPreview.length === 0 && <div className="dc-subtle text-sm">{isClientView ? "No upcoming visits - book one whenever you're ready." : "Nothing on the books yet."}</div>}
           </div>
         </div>
 
