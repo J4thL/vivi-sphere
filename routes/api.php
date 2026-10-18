@@ -52,6 +52,7 @@ Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
     });
 
     Route::get('/clients', [ClientController::class, 'index']);
+    Route::get('/clients/{client}', [ClientController::class, 'show']);
 
     Route::post('/stylists', [StylistController::class, 'store']);
     Route::patch('/stylists/{stylist}', [StylistController::class, 'update']);
