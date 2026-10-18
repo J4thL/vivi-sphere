@@ -15,9 +15,16 @@ class WaitlistController extends Controller
 {
     public function index(Request $request)
     {
-        abort_unless($request->user()->isManager(), 403);
-
         $user = $request->user();
+
+        // A client sees only their own waiting requests (so they can check on, or withdraw, them).
+        if ($user->isClient()) {
+            return WaitlistEntry::with(['service', 'stylist'])->where('status', 'waiting')
+                ->whereIn('client_id', Client::where('user_id', $user->id)->select('id'))
+                ->orderBy('preferred_date')->limit(config('salon.waitlist_max'))->get();
+        }
+
+        abort_unless($user->isManager(), 403);
 
         return WaitlistEntry::with(['service', 'stylist'])->where('status', 'waiting')
             // A manager sees their own branch; an admin sees all, or one with ?branch_id=.
@@ -78,7 +85,11 @@ class WaitlistController extends Controller
 
     public function destroy(Request $request, WaitlistEntry $waitlistEntry)
     {
-        abort_unless($request->user()->isManager() && $request->user()->canAccessBranch($waitlistEntry->branch_id), 403);
+        $user = $request->user();
+
+        // A client may withdraw their own request, and nobody else's.
+        $ownsIt = $user->isClient() && $waitlistEntry->client_id !== null && $waitlistEntry->client_id === $user->client?->id;
+        abort_unless($ownsIt || ($user->isManager() && $user->canAccessBranch($waitlistEntry->branch_id)), 403);
         $waitlistEntry->update(['status' => 'cancelled']);
 
         return response()->json(['message' => 'Removed from waitlist.']);

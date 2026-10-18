@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
@@ -110,6 +111,35 @@ class AuthController extends Controller
         $user->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id ?? 0)->delete();
 
         return response()->json(['message' => 'Password updated.', 'user' => $user->load('stylist')]);
+    }
+
+    /**
+     * A client edits their own name and phone. Only those two fields are read from the request, so
+     * visits, spend and last_visit_at (which the system maintains) can never be set from here.
+     * The login name and the client record are kept identical, so they are saved together.
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user->isClient(), 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $name = trim($data['name']);
+        $phone = isset($data['phone']) ? trim($data['phone']) : null;
+        abort_if($name === '', 422, 'Please enter your name.');
+
+        DB::transaction(function () use ($user, $name, $phone) {
+            $client = Client::firstOrCreate(['user_id' => $user->id], ['name' => $name]);
+            $user->forceFill(['name' => $name])->save();
+            $client->forceFill(['name' => $name, 'phone' => $phone === '' ? null : $phone])->save();
+            AuditLog::record($user, 'profile.updated', $client);
+        });
+
+        return response()->json(['user' => $user->fresh()->load('stylist', 'branch'), 'client' => $user->client()->first()]);
     }
 
     public function logout(Request $request)

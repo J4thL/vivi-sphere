@@ -23,9 +23,9 @@ export default function Dashboard(props) {
   const {
     user, token, onLogout, apiConnected, dashLoading,
     appointments, setAppointments, services, setServices, stylists, setStylists,
-    inventory, setInventory, clients, reviews, setReviews,
+    inventory, setInventory, clients, setClients, reviews, setReviews,
     waitlist, setWaitlist, auditLog,
-    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged, branches, setBranches, branchServices, setBranchServices, preferredBranchId, onPreferredBranchUsed,
+    landingContent, saveLandingContent, notify, notice, askConfirm, resendVerification, onPasswordChanged, onUserUpdated, branches, setBranches, branchServices, setBranchServices, preferredBranchId, onPreferredBranchUsed,
   } = props;
   const { colors } = useTheme();
   const role = user.role;
@@ -340,6 +340,19 @@ export default function Dashboard(props) {
     setReviewDraft((prev) => ({ ...prev, [appointmentId]: { submitted: true } }));
   };
 
+  // A client edits their own name and phone. The server keeps the login name and the client record in step;
+  // here the local copies are updated to match once it confirms (the old name is kept to relabel their bookings).
+  const saveProfileRaw = async (draft) => {
+    const oldName = user.name;
+    const result = await apiSend("/auth/profile", "PATCH", { name: draft.name, phone: draft.phone || null }, token);
+    if (result?.error) { notify(result.message, "error"); return false; }
+    if (result?.user) onUserUpdated(result.user);
+    if (result?.client) setClients((prev) => prev.map((c) => (c.id === result.client.id ? { ...c, name: result.client.name, phone: result.client.phone || "-" } : c)));
+    setAppointments((prev) => prev.map((a) => (a.client === oldName ? { ...a, client: result?.user?.name ?? a.client } : a)));
+    notify("Profile updated.");
+    return true;
+  };
+
   const moderateReview = (id, status) => {
     setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
     apiSend(`/reviews/${id}`, "PATCH", { status }, token).then((r) => { if (r?.error) notify(r.message, "error"); });
@@ -370,8 +383,12 @@ export default function Dashboard(props) {
   // slice - scopedAppointments alone is sorted but not filtered, so without
   // this, "Today's schedule" would show the earliest appointments overall
   // (likely from the past) rather than actually today's.
+  // For a client, "upcoming" means a visit still to come (booked or under way) - not cancelled or finished ones.
+  const isUpcoming = (a) => a.date >= todayStr(0) && (a.status === "confirmed" || a.status === "in-progress");
+  const byWhen = (a, b) => (a.date + a.time).localeCompare(b.date + b.time);
+  const myUpcoming = isClientView ? scopedAppointments.filter(isUpcoming).sort(byWhen) : [];
   const overviewPreview = isClientView
-    ? scopedAppointments.filter((a) => a.date >= todayStr(0))
+    ? myUpcoming
     : scopedAppointments.filter((a) => a.date === todayStr(0));
 
   const todaysRevenue = useMemo(() => scopedAppointments.filter((a) => a.date === todayStr(0) && a.status === "completed").reduce((sum, a) => sum + (a.price ?? priceOf(a.service)), 0), [scopedAppointments, priceOf]);
@@ -422,6 +439,12 @@ export default function Dashboard(props) {
     return stylistOk && statusOk;
   }).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
+  // The client's own list: what is coming first (soonest first), then history (newest first).
+  const upcomingAppointments = isClientView ? filteredAppointments.filter(isUpcoming) : [];
+  const pastAppointments = isClientView ? filteredAppointments.filter((a) => !isUpcoming(a)).sort((a, b) => byWhen(b, a)) : [];
+  // Reviews this client already sent that are still waiting, or were declined (the API returns only their own).
+  const myPendingReviews = isClientView ? reviews.filter((r) => r.appointmentId != null && r.status !== "approved") : [];
+
   const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(clientSearch.toLowerCase()));
   const myClientRecord = isClientView ? (clients[0] ?? null) : null; // API returns only this client's own record
   const reviewableAppointments = isClientView ? scopedAppointments.filter((a) => a.status === "completed" && !reviews.some((r) => r.appointmentId === a.id)) : [];
@@ -438,10 +461,11 @@ export default function Dashboard(props) {
   const addStylist = once("stylist", addStylistRaw);
   const addService = once("service", addServiceRaw);
   const addInventoryItem = once("inventory", addInventoryItemRaw);
+  const saveProfile = once("profile", saveProfileRaw);
 
   // Everything the tab components need, in one place.
   const ctx = {
-    token, notify, onPasswordChanged, branches, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
+    token, notify, onPasswordChanged, saveProfile, myUpcoming, upcomingAppointments, pastAppointments, myPendingReviews, branches, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,
