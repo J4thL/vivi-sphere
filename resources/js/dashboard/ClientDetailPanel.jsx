@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import { CalendarPlus, Phone, X } from "lucide-react";
-import { apiGet } from "./api.js";
+import { apiGet, apiSend } from "./api.js";
 import { STATUS_META, formatMoney, statusColor } from "./helpers.js";
 import { serifFont, useTheme } from "./theme.jsx";
+import { Field } from "./ui.jsx";
 
 /* Side panel with one client's history. Clients are shared across branches, so every visit shows its branch. */
-export default function ClientDetailPanel({ client, token, onClose, onBook }) {
+export default function ClientDetailPanel({ client, token, notify, onSaved, onClose, onBook }) {
   const { colors } = useTheme();
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
+  const [draft, setDraft] = useState(null); // {name, phone, notes} once loaded
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [duplicate, setDuplicate] = useState(false);
 
   useEffect(() => {
     let live = true;
     setData(null); setError(false);
-    apiGet(`/clients/${client.id}`, token).then((r) => { if (!live) return; if (r?.client) setData(r); else setError(true); });
+    apiGet(`/clients/${client.id}`, token).then((r) => { if (!live) return; if (r?.client) { setData(r); setDraft({ name: r.client.name, phone: r.client.phone || "", notes: r.client.notes || "" }); } else setError(true); });
     return () => { live = false; };
   }, [client.id, token]);
 
@@ -22,6 +27,20 @@ export default function ClientDetailPanel({ client, token, onClose, onBook }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  const dirty = data && draft && (draft.name.trim() !== data.client.name || draft.phone.trim() !== (data.client.phone || "") || draft.notes.trim() !== (data.client.notes || ""));
+  const save = async (confirmDuplicate = false) => {
+    if (!draft.name.trim()) { setSaveError("Please enter a name."); return; }
+    setSaving(true); setSaveError(""); setDuplicate(false);
+    const r = await apiSend(`/clients/${client.id}`, "PATCH", { name: draft.name, phone: draft.phone, notes: draft.notes, ...(confirmDuplicate ? { confirm_duplicate: true } : {}) }, token);
+    setSaving(false);
+    if (!r || r.error) { setSaveError(r?.message || "Could not reach the server."); setDuplicate(r?.code === "duplicate_phone"); return; }
+    setData((d) => ({ ...d, client: { ...d.client, ...r } }));
+    setDraft({ name: r.name, phone: r.phone || "", notes: r.notes || "" });
+    onSaved(r);
+    notify("Client updated.");
+  };
+  const input = { border: `1px solid ${colors.border}`, background: colors.cardBg, color: colors.ink };
 
   const card = { background: colors.cardBg, border: `1px solid ${colors.border}` };
   const stat = (label, value) => (
@@ -55,7 +74,7 @@ export default function ClientDetailPanel({ client, token, onClose, onBook }) {
         {!data && !error && <div className="dc-subtle text-sm">Loading history…</div>}
         {error && <div role="alert" className="dc-danger text-sm">Couldn't load this client. Close the panel and try again.</div>}
 
-        {data && (
+        {data && draft && (
           <>
             <div className="grid grid-cols-2 gap-2">
               {stat("Favourite service", data.favourite_service)}
@@ -63,6 +82,20 @@ export default function ClientDetailPanel({ client, token, onClose, onBook }) {
               {stat("Average per visit", data.average_spend != null ? formatMoney(data.average_spend) : null)}
               {stat("Waitlist requests", data.waitlist.length)}
             </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); save(); }} className="flex flex-col gap-3">
+              <div className="font-display text-base">Details &amp; private notes</div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Name"><input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} maxLength={255} style={input} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
+                <Field label="Phone"><input type="tel" value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} maxLength={50} style={input} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
+              </div>
+              <Field label="Notes (staff only - allergies, preferences, formulas)"><textarea value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} maxLength={2000} rows={3} style={input} className="px-2 py-1.5 rounded-md text-sm w-full" /></Field>
+              {saveError && <div role="alert" className="dc-danger text-xs">{saveError}</div>}
+              <div className="flex items-center gap-3">
+                <button type="submit" disabled={saving || !dirty} className="btn-wine px-4 py-2 rounded-md text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed">{saving ? "Saving…" : "Save"}</button>
+                {duplicate && <button type="button" onClick={() => save(true)} disabled={saving} className="dc-wine text-xs font-medium underline">Save anyway</button>}
+              </div>
+            </form>
 
             {upcoming.length > 0 && (
               <section>

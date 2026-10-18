@@ -210,6 +210,9 @@ export default function Dashboard(props) {
     resetForm();
   };
 
+  // After staff edit a client in the detail panel, keep the list in step.
+  const updateClientLocal = (c) => setClients((prev) => prev.map((x) => (x.id === c.id ? { ...x, name: c.name, phone: c.phone || "-" } : x)));
+
   // "Book" on a client row: open the booking form already set to that client's record.
   const bookForClient = (c) => { resetForm(); setForm({ ...emptyForm, client: c.name, clientId: c.id }); setActiveTab("appointments"); setShowForm(true); };
   // "Book again" on a past visit: same service, stylist (if still working) and branch, with a new date.
@@ -476,7 +479,7 @@ export default function Dashboard(props) {
 
   // Everything the tab components need, in one place.
   const ctx = {
-    token, notify, onPasswordChanged, saveProfile, bookForClient, rebook, myUpcoming, upcomingAppointments, pastAppointments, myPendingReviews, branches, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
+    token, notify, onPasswordChanged, saveProfile, bookForClient, rebook, updateClientLocal, myUpcoming, upcomingAppointments, pastAppointments, myPendingReviews, branches, busy, createdLogin, setCreatedLogin, activeCount, addFaq, addInventoryItem, addService, addStylist, adjustInventory,
     advanceStatus, appointments, auditLog, avgTicket, cancelAppointment, cancellationRate,
     clients, clientSearch, completedInRange, countTrend, currentStylist, deleteService, durationOf,
     editingId, editingStylistId, filteredAppointments, filteredClients, form, formError,

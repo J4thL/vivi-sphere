@@ -20,7 +20,7 @@ const exactDate = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { 
 
 export default function ClientsTab({ ctx }) {
   const { colors } = useTheme();
-  const { bookForClient, clientSearch, clients, filteredClients, setClientSearch, token } = ctx;
+  const { bookForClient, clientSearch, clients, filteredClients, setClientSearch, token, updateClientLocal, notify } = ctx;
   const [open, setOpen] = useState(null);
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("spend");
@@ -101,7 +101,7 @@ export default function ClientsTab({ ctx }) {
           </tbody>
         </table>
       </div>
-      {open && <ClientDetailPanel client={open} token={token} onClose={() => setOpen(null)} onBook={(c) => { setOpen(null); bookForClient(c); }} />}
+      {open && <ClientDetailPanel client={open} token={token} notify={notify} onSaved={(c) => { updateClientLocal(c); setOpen((prev) => ({ ...prev, name: c.name, phone: c.phone || "-" })); }} onClose={() => setOpen(null)} onBook={(c) => { setOpen(null); bookForClient(c); }} />}
     </div>
   );
 }

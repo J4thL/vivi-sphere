@@ -39,7 +39,7 @@ export async function apiSend(path, method, body, token) {
     });
     checkUnauthorized(res, token);
     const json = await res.json().catch(() => null);
-    if (!res.ok) return { error: true, message: json?.message || firstError(json) || "Something went wrong." };
+    if (!res.ok) return { error: true, code: json?.code, message: json?.message || firstError(json) || "Something went wrong." };
     return json;
   } catch { return null; }
 }

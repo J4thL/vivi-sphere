@@ -9,7 +9,10 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'name', 'phone', 'visits', 'spend', 'last_visit_at'];
+    protected $fillable = ['user_id', 'name', 'phone', 'notes', 'visits', 'spend', 'last_visit_at'];
+
+    // Staff-only: a client (or a stylist) must never receive these through the API unless a manager endpoint opts in.
+    protected $hidden = ['notes'];
 
     protected function casts(): array
     {
